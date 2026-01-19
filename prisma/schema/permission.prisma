@@ -1,0 +1,59 @@
+model Permission {
+  id          BigInt    @id @default(autoincrement())
+  name        String    @unique @db.VarChar(50)
+  displayName String    @map("display_name") @db.VarChar(50)
+  slug        String    @unique @db.VarChar(255)
+  group       String    @db.VarChar(255)
+  groupOrder  Int       @map("group_order")
+  order       Int
+  isActive    Boolean   @default(true) @map("is_active")
+  createdBy   BigInt?   @map("created_by")
+  updatedBy   BigInt?   @map("updated_by")
+  isDeleted   Boolean   @default(false) @map("is_deleted")
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   BigInt?   @map("deleted_by")
+  deletedReason String? @map("deleted_reason") @db.VarChar(255)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  createdByAdmin Admin?            @relation("PermissionCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByAdmin Admin?            @relation("PermissionUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+  deletedByAdmin Admin?            @relation("PermissionDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
+  admins         AdminPermission[]
+  roles          PermissionRole[]
+
+  @@index([slug], map: "permissions_slug_idx")
+  @@index([group], map: "permissions_group_idx")
+  @@index([isActive], map: "permissions_is_active_idx")
+  @@index([group, groupOrder, order], map: "permissions_group_order_idx")
+  @@map("permissions")
+}
+
+model AdminPermission {
+  adminId      BigInt   @map("admin_id")
+  permissionId BigInt   @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  admin      Admin      @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([adminId, permissionId])
+  @@index([permissionId], map: "admin_permission_permission_id_idx")
+  @@map("admin_permission")
+}
+
+model PermissionRole {
+  permissionId BigInt   @map("permission_id")
+  roleId       BigInt   @map("role_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([permissionId, roleId])
+  @@index([roleId], map: "permission_role_role_id_idx")
+  @@map("permission_role")
+}

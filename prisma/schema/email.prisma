@@ -1,0 +1,24 @@
+model SentEmailUser {
+    id            BigInt    @id @default(autoincrement())
+    userId        BigInt    @map("user_id")
+    toEmail       String    @map("to_email") @db.VarChar(255)
+    ccEmail       String?   @map("cc_email") @db.VarChar(255)
+    bccEmail      String?   @map("bcc_email") @db.VarChar(255)
+    fromEmail     String    @map("from_email") @db.VarChar(255)
+    subject       String?   @db.VarChar(500)
+    body          String?   @db.Text
+    createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+    createdBy     BigInt?   @map("created_by")
+    updatedBy     BigInt?   @map("updated_by")
+    isDeleted     Boolean   @default(false) @map("is_deleted")
+    deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+    deletedBy     BigInt?   @map("deleted_by")
+    deletedReason String?   @map("deleted_reason") @db.VarChar(255)
+
+    user          User      @relation("UserSentEmails", fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId], map: "sent_email_user_user_id_idx")
+    @@map("sent_email_users")
+}
+

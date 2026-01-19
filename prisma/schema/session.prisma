@@ -1,0 +1,47 @@
+model AdminSession {
+  id           String    @id @default(uuid())
+  adminId      BigInt    @map("admin_id")
+  token        String    @unique @db.VarChar(500)
+  refreshToken String?   @unique @map("refresh_token") @db.VarChar(500)
+  ipAddress    String?   @map("ip_address") @db.VarChar(50)
+  userAgent    String?   @map("user_agent") @db.Text
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(6)
+  isRevoked    Boolean   @default(false) @map("is_revoked")
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedBy    BigInt?   @map("revoked_by")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  admin        Admin     @relation("AdminSessions", fields: [adminId], references: [id], onDelete: Cascade)
+  revokedByAdmin Admin?  @relation("AdminRevokedSessions", fields: [revokedBy], references: [id], onDelete: SetNull)
+
+  @@index([adminId], map: "admin_sessions_admin_id_idx")
+  @@index([token], map: "admin_sessions_token_idx")
+  @@index([expiresAt], map: "admin_sessions_expires_at_idx")
+  @@index([isRevoked], map: "admin_sessions_is_revoked_idx")
+  @@map("admin_sessions")
+}
+
+model UserSession {
+  id           String    @id @default(uuid())
+  userId       BigInt    @map("user_id")
+  token        String    @unique @db.VarChar(500)
+  refreshToken String?   @unique @map("refresh_token") @db.VarChar(500)
+  ipAddress    String?   @map("ip_address") @db.VarChar(50)
+  userAgent    String?   @map("user_agent") @db.Text
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(6)
+  isRevoked    Boolean   @default(false) @map("is_revoked")
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedBy    BigInt?   @map("revoked_by")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user         User      @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
+  revokedByAdmin Admin?  @relation("AdminRevokedUserSessions", fields: [revokedBy], references: [id], onDelete: SetNull)
+
+  @@index([userId], map: "user_sessions_user_id_idx")
+  @@index([token], map: "user_sessions_token_idx")
+  @@index([expiresAt], map: "user_sessions_expires_at_idx")
+  @@index([isRevoked], map: "user_sessions_is_revoked_idx")
+  @@map("user_sessions")
+}

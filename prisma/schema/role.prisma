@@ -1,0 +1,47 @@
+model Role {
+  id          BigInt    @id @default(autoincrement())
+  name        String    @unique @db.VarChar(255)
+  displayName String    @map("display_name") @db.VarChar(255)
+  slug        String    @unique @db.VarChar(255)
+  description String?   @db.Text
+  isDefault   Boolean   @default(false) @map("is_default")
+  order       Int       @default(0)
+  isActive    Boolean   @default(true) @map("is_active")
+  createdBy   BigInt?   @map("created_by")
+  updatedBy   BigInt?   @map("updated_by")
+  isDeleted   Boolean   @default(false) @map("is_deleted")
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   BigInt?   @map("deleted_by")
+  deletedReason String? @map("deleted_reason") @db.VarChar(255)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  createdByAdmin Admin?            @relation("RoleCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByAdmin Admin?            @relation("RoleUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+  deletedByAdmin Admin?            @relation("RoleDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
+  admins         AdminRole[]
+  permissions    PermissionRole[]
+
+  @@index([slug], map: "roles_slug_idx")
+  @@index([isDefault], map: "roles_is_default_idx")
+  @@index([isActive], map: "roles_is_active_idx")
+  @@index([order], map: "roles_order_idx")
+  @@index([isActive, order], map: "roles_active_order_idx")
+  @@map("roles")
+}
+
+
+model AdminRole {
+  adminId   BigInt   @map("admin_id")
+  roleId    BigInt   @map("role_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  role  Role  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([adminId, roleId])
+  @@index([roleId], map: "admin_role_role_id_idx")
+  @@map("admin_role")
+}

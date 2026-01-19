@@ -1,0 +1,585 @@
+// Invoice Management Permissions
+
+// Customer Module Permissions
+export const customerPermissions = [
+  // Module
+  {
+    name: 'Customer Module',
+    displayName: 'Customer Module',
+    slug: 'customer.module',
+    group: 'module',
+    groupOrder: 2,
+    order: 10,
+  },
+  // CRUD
+  {
+    name: 'Customer View',
+    displayName: 'Customer View',
+    slug: 'customer.view',
+    group: 'customer',
+    groupOrder: 13,
+    order: 1,
+  },
+  {
+    name: 'Customer Create',
+    displayName: 'Customer Create',
+    slug: 'customer.create',
+    group: 'customer',
+    groupOrder: 13,
+    order: 2,
+  },
+  {
+    name: 'Customer Update',
+    displayName: 'Customer Update',
+    slug: 'customer.update',
+    group: 'customer',
+    groupOrder: 13,
+    order: 3,
+  },
+  {
+    name: 'Customer Delete',
+    displayName: 'Customer Delete',
+    slug: 'customer.delete',
+    group: 'customer',
+    groupOrder: 13,
+    order: 4,
+  },
+  {
+    name: 'Customer Status',
+    displayName: 'Customer Status',
+    slug: 'customer.status',
+    group: 'customer',
+    groupOrder: 13,
+    order: 5,
+  },
+  {
+    name: 'Customer Restore',
+    displayName: 'Customer Restore',
+    slug: 'customer.restore',
+    group: 'customer',
+    groupOrder: 13,
+    order: 6,
+  },
+  {
+    name: 'Customer Force Delete',
+    displayName: 'Customer Force Delete',
+    slug: 'customer.force-delete',
+    group: 'customer',
+    groupOrder: 13,
+    order: 7,
+  },
+  {
+    name: 'Customer Export',
+    displayName: 'Customer Export',
+    slug: 'customer.export',
+    group: 'customer',
+    groupOrder: 13,
+    order: 8,
+  },
+  {
+    name: 'Customer Import',
+    displayName: 'Customer Import',
+    slug: 'customer.import',
+    group: 'customer',
+    groupOrder: 13,
+    order: 9,
+  },
+];
+
+// Invoice Module Permissions
+export const invoicePermissions = [
+  // Module
+  {
+    name: 'Invoice Module',
+    displayName: 'Invoice Module',
+    slug: 'invoice.module',
+    group: 'module',
+    groupOrder: 2,
+    order: 11,
+  },
+  // CRUD
+  {
+    name: 'Invoice View',
+    displayName: 'Invoice View',
+    slug: 'invoice.view',
+    group: 'invoice',
+    groupOrder: 15,
+    order: 1,
+  },
+  {
+    name: 'Invoice Create',
+    displayName: 'Invoice Create',
+    slug: 'invoice.create',
+    group: 'invoice',
+    groupOrder: 15,
+    order: 2,
+  },
+  {
+    name: 'Invoice Update',
+    displayName: 'Invoice Update',
+    slug: 'invoice.update',
+    group: 'invoice',
+    groupOrder: 15,
+    order: 3,
+  },
+  {
+    name: 'Invoice Delete',
+    displayName: 'Invoice Delete',
+    slug: 'invoice.delete',
+    group: 'invoice',
+    groupOrder: 15,
+    order: 4,
+  },
+  {
+    name: 'Invoice Status',
+    displayName: 'Invoice Status',
+    slug: 'invoice.status',
+    group: 'invoice',
+    groupOrder: 15,
+    order: 5,
+  },
+  {
+    name: 'Invoice Restore',
+    displayName: 'Invoice Restore',
+    slug: 'invoice.restore',
+    group: 'invoice',
+    groupOrder: 15,
+    order: 6,
+  },
+  {
+    name: 'Invoice Force Delete',
+    displayName: 'Invoice Force Delete',
+    slug: 'invoice.force-delete',
+    group: 'invoice',
+    groupOrder: 15,
+    order: 7,
+  },
+  {
+    name: 'Invoice Export',
+    displayName: 'Invoice Export',
+    slug: 'invoice.export',
+    group: 'invoice',
+    groupOrder: 15,
+    order: 8,
+  },
+  {
+    name: 'Invoice Send',
+    displayName: 'Invoice Send',
+    slug: 'invoice.send',
+    group: 'invoice',
+    groupOrder: 15,
+    order: 9,
+  },
+  {
+    name: 'Invoice Duplicate',
+    displayName: 'Invoice Duplicate',
+    slug: 'invoice.duplicate',
+    group: 'invoice',
+    groupOrder: 15,
+    order: 10,
+  },
+  {
+    name: 'Invoice Generate PDF',
+    displayName: 'Invoice Generate PDF',
+    slug: 'invoice.generate-pdf',
+    group: 'invoice',
+    groupOrder: 15,
+    order: 11,
+  },
+];
+
+// Invoice Items Permissions
+export const invoiceItemPermissions = [
+  // Module
+  {
+    name: 'Invoice Items Module',
+    displayName: 'Invoice Items Module',
+    slug: 'invoice-items.module',
+    group: 'module',
+    groupOrder: 2,
+    order: 12,
+  },
+  // CRUD
+  {
+    name: 'Invoice Item View',
+    displayName: 'Invoice Item View',
+    slug: 'invoice-item.view',
+    group: 'invoice-item',
+    groupOrder: 16,
+    order: 1,
+  },
+  {
+    name: 'Invoice Item Create',
+    displayName: 'Invoice Item Create',
+    slug: 'invoice-item.create',
+    group: 'invoice-item',
+    groupOrder: 16,
+    order: 2,
+  },
+  {
+    name: 'Invoice Item Update',
+    displayName: 'Invoice Item Update',
+    slug: 'invoice-item.update',
+    group: 'invoice-item',
+    groupOrder: 16,
+    order: 3,
+  },
+  {
+    name: 'Invoice Item Delete',
+    displayName: 'Invoice Item Delete',
+    slug: 'invoice-item.delete',
+    group: 'invoice-item',
+    groupOrder: 16,
+    order: 4,
+  },
+];
+
+// Payments Permissions
+export const paymentPermissions = [
+  // Module
+  {
+    name: 'Payments Module',
+    displayName: 'Payments Module',
+    slug: 'payments.module',
+    group: 'module',
+    groupOrder: 2,
+    order: 13,
+  },
+  // CRUD
+  {
+    name: 'Payment View',
+    displayName: 'Payment View',
+    slug: 'payment.view',
+    group: 'payment',
+    groupOrder: 17,
+    order: 1,
+  },
+  {
+    name: 'Payment Create',
+    displayName: 'Payment Create',
+    slug: 'payment.create',
+    group: 'payment',
+    groupOrder: 17,
+    order: 2,
+  },
+  {
+    name: 'Payment Update',
+    displayName: 'Payment Update',
+    slug: 'payment.update',
+    group: 'payment',
+    groupOrder: 17,
+    order: 3,
+  },
+  {
+    name: 'Payment Delete',
+    displayName: 'Payment Delete',
+    slug: 'payment.delete',
+    group: 'payment',
+    groupOrder: 17,
+    order: 4,
+  },
+  {
+    name: 'Payment Refund',
+    displayName: 'Payment Refund',
+    slug: 'payment.refund',
+    group: 'payment',
+    groupOrder: 17,
+    order: 5,
+  },
+  {
+    name: 'Payment Status',
+    displayName: 'Payment Status',
+    slug: 'payment.status',
+    group: 'payment',
+    groupOrder: 17,
+    order: 6,
+  },
+  {
+    name: 'Payment Export',
+    displayName: 'Payment Export',
+    slug: 'payment.export',
+    group: 'payment',
+    groupOrder: 17,
+    order: 7,
+  },
+];
+
+// Invoice Drafts Permissions
+export const invoiceDraftPermissions = [
+  // Module
+  {
+    name: 'Invoice Drafts Module',
+    displayName: 'Invoice Drafts Module',
+    slug: 'invoice-drafts.module',
+    group: 'module',
+    groupOrder: 2,
+    order: 14,
+  },
+  // CRUD
+  {
+    name: 'Invoice Draft View',
+    displayName: 'Invoice Draft View',
+    slug: 'invoice-draft.view',
+    group: 'invoice-draft',
+    groupOrder: 18,
+    order: 1,
+  },
+  {
+    name: 'Invoice Draft Create',
+    displayName: 'Invoice Draft Create',
+    slug: 'invoice-draft.create',
+    group: 'invoice-draft',
+    groupOrder: 18,
+    order: 2,
+  },
+  {
+    name: 'Invoice Draft Update',
+    displayName: 'Invoice Draft Update',
+    slug: 'invoice-draft.update',
+    group: 'invoice-draft',
+    groupOrder: 18,
+    order: 3,
+  },
+  {
+    name: 'Invoice Draft Delete',
+    displayName: 'Invoice Draft Delete',
+    slug: 'invoice-draft.delete',
+    group: 'invoice-draft',
+    groupOrder: 18,
+    order: 4,
+  },
+  {
+    name: 'Invoice Draft Convert',
+    displayName: 'Invoice Draft Convert',
+    slug: 'invoice-draft.convert',
+    group: 'invoice-draft',
+    groupOrder: 18,
+    order: 5,
+  },
+  {
+    name: 'Invoice Draft Status',
+    displayName: 'Invoice Draft Status',
+    slug: 'invoice-draft.status',
+    group: 'invoice-draft',
+    groupOrder: 18,
+    order: 6,
+  },
+];
+
+// Smart Items Permissions
+export const smartItemPermissions = [
+  // Module
+  {
+    name: 'Smart Items Module',
+    displayName: 'Smart Items Module',
+    slug: 'smart-items.module',
+    group: 'module',
+    groupOrder: 2,
+    order: 15,
+  },
+  // CRUD
+  {
+    name: 'Smart Item View',
+    displayName: 'Smart Item View',
+    slug: 'smart-item.view',
+    group: 'smart-item',
+    groupOrder: 19,
+    order: 1,
+  },
+  {
+    name: 'Smart Item Create',
+    displayName: 'Smart Item Create',
+    slug: 'smart-item.create',
+    group: 'smart-item',
+    groupOrder: 19,
+    order: 2,
+  },
+  {
+    name: 'Smart Item Update',
+    displayName: 'Smart Item Update',
+    slug: 'smart-item.update',
+    group: 'smart-item',
+    groupOrder: 19,
+    order: 3,
+  },
+  {
+    name: 'Smart Item Delete',
+    displayName: 'Smart Item Delete',
+    slug: 'smart-item.delete',
+    group: 'smart-item',
+    groupOrder: 19,
+    order: 4,
+  },
+  {
+    name: 'Smart Item Status',
+    displayName: 'Smart Item Status',
+    slug: 'smart-item.status',
+    group: 'smart-item',
+    groupOrder: 19,
+    order: 5,
+  },
+  {
+    name: 'Smart Item Restore',
+    displayName: 'Smart Item Restore',
+    slug: 'smart-item.restore',
+    group: 'smart-item',
+    groupOrder: 19,
+    order: 6,
+  },
+  {
+    name: 'Smart Item Force Delete',
+    displayName: 'Smart Item Force Delete',
+    slug: 'smart-item.force-delete',
+    group: 'smart-item',
+    groupOrder: 19,
+    order: 7,
+  },
+];
+
+// Invoice Snippets Permissions
+export const invoiceSnippetPermissions = [
+  // Module
+  {
+    name: 'Invoice Snippets Module',
+    displayName: 'Invoice Snippets Module',
+    slug: 'invoice-snippets.module',
+    group: 'module',
+    groupOrder: 2,
+    order: 16,
+  },
+  // CRUD
+  {
+    name: 'Invoice Snippet View',
+    displayName: 'Invoice Snippet View',
+    slug: 'invoice-snippet.view',
+    group: 'invoice-snippet',
+    groupOrder: 20,
+    order: 1,
+  },
+  {
+    name: 'Invoice Snippet Create',
+    displayName: 'Invoice Snippet Create',
+    slug: 'invoice-snippet.create',
+    group: 'invoice-snippet',
+    groupOrder: 20,
+    order: 2,
+  },
+  {
+    name: 'Invoice Snippet Update',
+    displayName: 'Invoice Snippet Update',
+    slug: 'invoice-snippet.update',
+    group: 'invoice-snippet',
+    groupOrder: 20,
+    order: 3,
+  },
+  {
+    name: 'Invoice Snippet Delete',
+    displayName: 'Invoice Snippet Delete',
+    slug: 'invoice-snippet.delete',
+    group: 'invoice-snippet',
+    groupOrder: 20,
+    order: 4,
+  },
+  {
+    name: 'Invoice Snippet Share',
+    displayName: 'Invoice Snippet Share',
+    slug: 'invoice-snippet.share',
+    group: 'invoice-snippet',
+    groupOrder: 20,
+    order: 5,
+  },
+  {
+    name: 'Invoice Snippet Rate',
+    displayName: 'Invoice Snippet Rate',
+    slug: 'invoice-snippet.rate',
+    group: 'invoice-snippet',
+    groupOrder: 20,
+    order: 6,
+  },
+  {
+    name: 'Invoice Snippet Set System',
+    displayName: 'Invoice Snippet Set System',
+    slug: 'invoice-snippet.set-system',
+    group: 'invoice-snippet',
+    groupOrder: 20,
+    order: 7,
+  },
+  {
+    name: 'Invoice Snippet Restore',
+    displayName: 'Invoice Snippet Restore',
+    slug: 'invoice-snippet.restore',
+    group: 'invoice-snippet',
+    groupOrder: 20,
+    order: 8,
+  },
+  {
+    name: 'Invoice Snippet Force Delete',
+    displayName: 'Invoice Snippet Force Delete',
+    slug: 'invoice-snippet.force-delete',
+    group: 'invoice-snippet',
+    groupOrder: 20,
+    order: 9,
+  },
+];
+
+// Email Management Permissions
+export const emailPermissions = [
+  // Module
+  {
+    name: 'Email Management Module',
+    displayName: 'Email Management Module',
+    slug: 'email-management.module',
+    group: 'module',
+    groupOrder: 2,
+    order: 17,
+  },
+  // CRUD
+  {
+    name: 'Email View',
+    displayName: 'Email View',
+    slug: 'email.view',
+    group: 'email',
+    groupOrder: 14,
+    order: 1,
+  },
+  {
+    name: 'Email Create',
+    displayName: 'Email Create',
+    slug: 'email.create',
+    group: 'email',
+    groupOrder: 14,
+    order: 2,
+  },
+  {
+    name: 'Email Update',
+    displayName: 'Email Update',
+    slug: 'email.update',
+    group: 'email',
+    groupOrder: 14,
+    order: 3,
+  },
+  {
+    name: 'Email Delete',
+    displayName: 'Email Delete',
+    slug: 'email.delete',
+    group: 'email',
+    groupOrder: 14,
+    order: 4,
+  },
+  {
+    name: 'Email Set Primary',
+    displayName: 'Email Set Primary',
+    slug: 'email.set-primary',
+    group: 'email',
+    groupOrder: 14,
+    order: 5,
+  },
+  {
+    name: 'Email Verify',
+    displayName: 'Email Verify',
+    slug: 'email.verify',
+    group: 'email',
+    groupOrder: 14,
+    order: 6,
+  },
+];

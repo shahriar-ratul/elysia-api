@@ -1,0 +1,37 @@
+// AuditLog model - System audit trail
+
+model AuditAdminLog {
+  id        BigInt   @id @default(autoincrement())
+  service   String   @db.VarChar(50)
+  action    String   @db.VarChar(100)
+  adminId   BigInt   @map("admin_id")
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.VarChar(255)
+  details   Json?
+  remarks   String?  @map("remarks") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  admin     Admin    @relation("AdminAuditLogs", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId], map: "audit_admin_logs_admin_id_idx")
+  @@map("audit_admin_logs")
+}
+
+model AuditUserLog {
+  id        BigInt   @id @default(autoincrement())
+  service   String   @db.VarChar(50)
+  action    String   @db.VarChar(100)
+  userId    BigInt   @map("user_id")
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.VarChar(255)
+  details   Json?
+  remarks   String?  @map("remarks") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user      User     @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "audit_user_logs_user_id_idx")
+  @@map("audit_user_logs")
+}

@@ -1,0 +1,76 @@
+model Admin {
+  id                 BigInt    @id @default(autoincrement())
+  firstName          String?   @map("first_name") @db.VarChar(100)
+  lastName           String?   @map("last_name") @db.VarChar(100)
+  phone              String?   @unique @db.VarChar(100)
+  username           String?   @unique @db.VarChar(100)
+  email              String    @unique @db.VarChar(255)
+  password           String    @db.VarChar(255)
+  photo              String?   @db.VarChar(500)
+  dob                DateTime? @db.Date
+  joinedDate         DateTime  @default(dbgenerated("CURRENT_DATE")) @map("joined_date") @db.Date
+  gender             String?   @db.VarChar(100)
+  lastLogin          DateTime? @map("last_login") @db.Timestamptz(6)
+  isVerified         Boolean   @default(false) @map("is_verified")
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(6)
+  verifiedByEmail    Boolean   @default(false) @map("verified_by_email")
+  verifiedByPhone    Boolean   @default(false) @map("verified_by_phone")
+  isActive           Boolean   @default(true) @map("is_active")
+  createdBy          BigInt?   @map("created_by")
+  updatedBy          BigInt?   @map("updated_by")
+  isDeleted          Boolean   @default(false) @map("is_deleted")
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy          BigInt?   @map("deleted_by")
+  deletedReason      String?   @map("deleted_reason") @db.VarChar(255)
+  countryId          BigInt?   @map("country_id")
+  userTimezone       String?   @map("user_timezone") @db.VarChar(100)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Self-referential relations
+  createdByAdmin     Admin?  @relation("AdminCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  adminsCreated      Admin[] @relation("AdminCreatedBy")
+  updatedByAdmin     Admin?  @relation("AdminUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+  adminsUpdated      Admin[] @relation("AdminUpdatedBy")
+  deletedByAdmin     Admin?  @relation("AdminDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
+  adminsDeleted      Admin[] @relation("AdminDeletedBy")
+
+  // Relations
+  country Country? @relation("AdminCountryRelation", fields: [countryId], references: [id], onDelete: SetNull)
+  roles              AdminRole[]
+  permissions        AdminPermission[]
+  sessions           AdminSession[]       @relation("AdminSessions")
+  revokedSessions    AdminSession[]       @relation("AdminRevokedSessions")
+  
+  revokedUserSessions UserSession[]       @relation("AdminRevokedUserSessions")
+
+  // Tracking relations
+  usersCreated       User[]               @relation("UserCreatedBy")
+  usersUpdated       User[]               @relation("UserUpdatedBy")
+  usersDeleted       User[]               @relation("UserDeletedBy")
+
+  rolesCreated       Role[]               @relation("RoleCreatedBy")
+  rolesUpdated       Role[]               @relation("RoleUpdatedBy")
+  rolesDeleted       Role[]               @relation("RoleDeletedBy")
+
+  permissionsCreated Permission[]         @relation("PermissionCreatedBy")
+  permissionsUpdated Permission[]         @relation("PermissionUpdatedBy")
+  permissionsDeleted Permission[]         @relation("PermissionDeletedBy")
+
+  countriesCreated   Country[]            @relation("CountryCreatedBy")
+  countriesUpdated   Country[]            @relation("CountryUpdatedBy")
+  countriesDeleted   Country[]            @relation("CountryDeletedBy")
+
+  auditLogs          AuditAdminLog[]      @relation("AdminAuditLogs")
+
+  @@index([isActive], map: "admins_is_active_idx")
+  @@index([isDeleted], map: "admins_is_deleted_idx")
+  @@index([isVerified], map: "admins_is_verified_idx")
+  @@index([email, isActive], map: "admins_email_active_idx")
+  @@index([createdBy], map: "admins_created_by_idx")
+  @@index([updatedBy], map: "admins_updated_by_idx")
+  @@index([deletedBy], map: "admins_deleted_by_idx")
+  @@map("admins")
+  
+
+}
