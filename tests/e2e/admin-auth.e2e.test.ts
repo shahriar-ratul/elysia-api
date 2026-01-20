@@ -1,14 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { ApiClient } from '../helpers/api-client'
-import { TestDB } from '../helpers/test-db'
+import { describe, it, expect, beforeEach, afterAll } from 'vitest'
+import { request, TestDB } from '../helpers'
 
 describe('Admin Authentication E2E', () => {
-  let client: ApiClient
-
-  beforeAll(() => {
-    client = new ApiClient()
-  })
-
   beforeEach(async () => {
     await TestDB.cleanup()
   })
@@ -26,30 +19,28 @@ describe('Admin Authentication E2E', () => {
       })
 
       // Act
-      const response = await client.adminSignIn({
-        email: 'admin@test.com',
-        password: 'admin123'
-      })
+      const response = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'admin@test.com', password: 'admin123' })
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data).toHaveProperty('admin')
-      expect(response.data).toHaveProperty('token')
-      expect(response.data).toHaveProperty('refreshToken')
-      expect(response.data.admin.email).toBe('admin@test.com')
-      expect(response.data.admin).toHaveProperty('roles')
+      expect(response.body).toHaveProperty('admin')
+      expect(response.body).toHaveProperty('token')
+      expect(response.body).toHaveProperty('refreshToken')
+      expect(response.body.admin.email).toBe('admin@test.com')
+      expect(response.body.admin).toHaveProperty('roles')
     })
 
     it('should return error for invalid credentials', async () => {
       // Act
-      const response = await client.adminSignIn({
-        email: 'nonexistent@test.com',
-        password: 'password123'
-      })
+      const response = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'nonexistent@test.com', password: 'password123' })
 
       // Assert
       expect(response.status).not.toBe(200)
-      expect(response.data).toHaveProperty('error')
+      expect(response.body).toHaveProperty('error')
     })
 
     it('should return roles in response', async () => {
@@ -60,50 +51,47 @@ describe('Admin Authentication E2E', () => {
       })
 
       // Act
-      const response = await client.adminSignIn({
-        email: 'superadmin@test.com',
-        password: 'admin123'
-      })
+      const response = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'superadmin@test.com', password: 'admin123' })
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data.admin.roles).toBeInstanceOf(Array)
-      expect(response.data.admin.roles.length).toBeGreaterThan(0)
+      expect(response.body.admin.roles).toBeInstanceOf(Array)
+      expect(response.body.admin.roles.length).toBeGreaterThan(0)
     })
   })
 
   describe('GET /api/v1/admin/auth/me', () => {
     it('should return admin profile with permissions', async () => {
       // Arrange
-      const admin = await TestDB.createSuperAdmin({
+      await TestDB.createSuperAdmin({
         email: 'admin@test.com',
         password: 'admin123'
       })
-      
-      const signInResponse = await client.adminSignIn({
-        email: 'admin@test.com',
-        password: 'admin123'
-      })
-      
-      client.setToken(signInResponse.data.token)
+
+      const signInResponse = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'admin@test.com', password: 'admin123' })
+
+      const token = signInResponse.body.token
 
       // Act
-      const response = await client.getAdminProfile()
+      const response = await request()
+        .get('/api/v1/admin/auth/me')
+        .auth(token)
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data).toHaveProperty('id')
-      expect(response.data).toHaveProperty('email')
-      expect(response.data).toHaveProperty('roles')
-      expect(response.data).toHaveProperty('permissions')
+      expect(response.body).toHaveProperty('id')
+      expect(response.body).toHaveProperty('email')
+      expect(response.body).toHaveProperty('roles')
+      expect(response.body).toHaveProperty('permissions')
     })
 
     it('should require authentication', async () => {
-      // Arrange
-      client.clearToken()
-
       // Act
-      const response = await client.getAdminProfile()
+      const response = await request().get('/api/v1/admin/auth/me')
 
       // Assert
       expect(response.status).not.toBe(200)
@@ -117,20 +105,21 @@ describe('Admin Authentication E2E', () => {
         email: 'admin@test.com',
         password: 'admin123'
       })
-      
-      const signInResponse = await client.adminSignIn({
-        email: 'admin@test.com',
-        password: 'admin123'
-      })
-      
-      client.setToken(signInResponse.data.token)
+
+      const signInResponse = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'admin@test.com', password: 'admin123' })
+
+      const token = signInResponse.body.token
 
       // Act
-      const response = await client.adminSignOut()
+      const response = await request()
+        .post('/api/v1/admin/auth/sign-out')
+        .auth(token)
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data.success).toBe(true)
+      expect(response.body.success).toBe(true)
     })
 
     it('should invalidate token after sign out', async () => {
@@ -139,18 +128,17 @@ describe('Admin Authentication E2E', () => {
         email: 'admin@test.com',
         password: 'admin123'
       })
-      
-      const signInResponse = await client.adminSignIn({
-        email: 'admin@test.com',
-        password: 'admin123'
-      })
-      
-      const token = signInResponse.data.token
-      client.setToken(token)
-      await client.adminSignOut()
+
+      const signInResponse = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'admin@test.com', password: 'admin123' })
+
+      const token = signInResponse.body.token
+
+      await request().post('/api/v1/admin/auth/sign-out').auth(token)
 
       // Act - Try to use the same token
-      const response = await client.getAdminProfile()
+      const response = await request().get('/api/v1/admin/auth/me').auth(token)
 
       // Assert
       expect(response.status).not.toBe(200)

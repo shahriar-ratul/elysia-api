@@ -1,31 +1,23 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { ApiClient } from '../helpers/api-client'
-import { TestDB } from '../helpers/test-db'
+import { describe, it, expect, beforeEach, afterAll } from 'vitest'
+import { request, TestDB } from '../helpers'
 
 describe('Permission Management E2E', () => {
-  let client: ApiClient
   let adminToken: string
-
-  beforeAll(async () => {
-    client = new ApiClient()
-  })
 
   beforeEach(async () => {
     await TestDB.cleanup()
-    
+
     // Create super admin
     await TestDB.createSuperAdmin({
       email: 'superadmin@test.com',
       password: 'admin123'
     })
-    
-    const signInResponse = await client.adminSignIn({
-      email: 'superadmin@test.com',
-      password: 'admin123'
-    })
-    
-    adminToken = signInResponse.data.token
-    client.setToken(adminToken)
+
+    const signInResponse = await request()
+      .post('/api/v1/admin/auth/sign-in')
+      .send({ email: 'superadmin@test.com', password: 'admin123' })
+
+    adminToken = signInResponse.body.token
   })
 
   afterAll(async () => {
@@ -36,32 +28,31 @@ describe('Permission Management E2E', () => {
     it('should list all permissions grouped', async () => {
       // Arrange
       await TestDB.createTestPermission({
-        name: 'Create Users',
-        slug: 'users.create',
+        name: 'test-Create Users',
+        slug: 'test.users.create',
         group: 'Users'
       })
       await TestDB.createTestPermission({
-        name: 'Read Users',
-        slug: 'users.read',
+        name: 'test-Read Users',
+        slug: 'test.users.read',
         group: 'Users'
       })
 
       // Act
-      const response = await client.listPermissions()
+      const response = await request()
+        .get('/api/v1/admin/permissions')
+        .auth(adminToken)
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data).toHaveProperty('permissions')
-      expect(response.data).toHaveProperty('total')
-      expect(typeof response.data.permissions).toBe('object')
+      expect(response.body).toHaveProperty('permissions')
+      expect(response.body).toHaveProperty('total')
+      expect(typeof response.body.permissions).toBe('object')
     })
 
     it('should require authentication', async () => {
-      // Arrange
-      client.clearToken()
-
       // Act
-      const response = await client.listPermissions()
+      const response = await request().get('/api/v1/admin/permissions')
 
       // Assert
       expect(response.status).not.toBe(200)
@@ -73,20 +64,19 @@ describe('Permission Management E2E', () => {
         email: 'limited@test.com',
         password: 'admin123'
       })
-      
-      const signInResponse = await client.adminSignIn({
-        email: 'limited@test.com',
-        password: 'admin123'
-      })
-      
-      client.setToken(signInResponse.data.token)
+
+      const signInResponse = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'limited@test.com', password: 'admin123' })
 
       // Act
-      const response = await client.listPermissions()
+      const response = await request()
+        .get('/api/v1/admin/permissions')
+        .auth(signInResponse.body.token)
 
       // Assert
       expect(response.status).not.toBe(200)
-      expect(response.data.error).toContain('permission')
+      expect(response.body.error).toContain('permission')
     })
   })
 
@@ -94,25 +84,29 @@ describe('Permission Management E2E', () => {
     it('should return permission details', async () => {
       // Arrange
       const permission = await TestDB.createTestPermission({
-        name: 'Test Permission',
-        slug: 'test.permission',
+        name: 'test-Test Permission',
+        slug: 'test.test.permission',
         group: 'Test'
       })
 
       // Act
-      const response = await client.getPermission(permission.id.toString())
+      const response = await request()
+        .get(`/api/v1/admin/permissions/${permission.id}`)
+        .auth(adminToken)
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data.id).toBe(permission.id.toString())
-      expect(response.data.name).toBe('Test Permission')
-      expect(response.data.slug).toBe('test.permission')
-      expect(response.data.group).toBe('Test')
+      expect(response.body.id).toBe(permission.id.toString())
+      expect(response.body.name).toBe('test-Test Permission')
+      expect(response.body.slug).toBe('test.test.permission')
+      expect(response.body.group).toBe('Test')
     })
 
     it('should return 404 for non-existent permission', async () => {
       // Act
-      const response = await client.getPermission('99999')
+      const response = await request()
+        .get('/api/v1/admin/permissions/99999')
+        .auth(adminToken)
 
       // Assert
       expect(response.status).not.toBe(200)
@@ -125,16 +119,15 @@ describe('Permission Management E2E', () => {
         email: 'limited@test.com',
         password: 'admin123'
       })
-      
-      const signInResponse = await client.adminSignIn({
-        email: 'limited@test.com',
-        password: 'admin123'
-      })
-      
-      client.setToken(signInResponse.data.token)
+
+      const signInResponse = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'limited@test.com', password: 'admin123' })
 
       // Act
-      const response = await client.getPermission(permission.id.toString())
+      const response = await request()
+        .get(`/api/v1/admin/permissions/${permission.id}`)
+        .auth(signInResponse.body.token)
 
       // Assert
       expect(response.status).not.toBe(200)
@@ -144,20 +137,23 @@ describe('Permission Management E2E', () => {
   describe('POST /api/v1/admin/permissions', () => {
     it('should create new permission', async () => {
       // Act
-      const response = await client.createPermission({
-        name: 'New Permission',
-        displayName: 'New Permission',
-        slug: 'new.permission',
-        group: 'Test',
-        groupOrder: 1,
-        order: 1
-      })
+      const response = await request()
+        .post('/api/v1/admin/permissions')
+        .auth(adminToken)
+        .send({
+          name: 'test-New Permission',
+          displayName: 'New Permission',
+          slug: 'test.new.permission',
+          group: 'Test',
+          groupOrder: 1,
+          order: 1
+        })
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data).toHaveProperty('id')
-      expect(response.data.name).toBe('New Permission')
-      expect(response.data.slug).toBe('new.permission')
+      expect(response.body).toHaveProperty('id')
+      expect(response.body.name).toBe('test-New Permission')
+      expect(response.body.slug).toBe('test.new.permission')
     })
 
     it('should require permissions.create permission', async () => {
@@ -166,42 +162,35 @@ describe('Permission Management E2E', () => {
         email: 'limited@test.com',
         password: 'admin123'
       })
-      
-      const signInResponse = await client.adminSignIn({
-        email: 'limited@test.com',
-        password: 'admin123'
-      })
-      
-      client.setToken(signInResponse.data.token)
+
+      const signInResponse = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'limited@test.com', password: 'admin123' })
 
       // Act
-      const response = await client.createPermission({
-        name: 'New Permission',
-        displayName: 'New Permission',
-        slug: 'new.permission',
-        group: 'Test',
-        groupOrder: 1,
-        order: 1
-      })
+      const response = await request()
+        .post('/api/v1/admin/permissions')
+        .auth(signInResponse.body.token)
+        .send({
+          name: 'test-New Permission',
+          displayName: 'New Permission',
+          slug: 'test.new.permission',
+          group: 'Test',
+          groupOrder: 1,
+          order: 1
+        })
 
       // Assert
       expect(response.status).not.toBe(200)
-      expect(response.data.error).toContain('permission')
+      expect(response.body.error).toContain('permission')
     })
 
     it('should validate required fields', async () => {
       // Act
-      const response = await fetch('http://localhost:3000/api/v1/admin/permissions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
-        body: JSON.stringify({
-          // Missing required fields
-          name: 'Test'
-        })
-      })
+      const response = await request()
+        .post('/api/v1/admin/permissions')
+        .auth(adminToken)
+        .send({ name: 'Test' })
 
       // Assert
       expect(response.status).not.toBe(200)

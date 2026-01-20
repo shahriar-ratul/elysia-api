@@ -1,214 +1,269 @@
-import { db } from "../src/utils/db";
-import bcrypt from "bcryptjs";
+import { PrismaClient } from '@/generated/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
+import 'dotenv/config';
+import { faker } from '@faker-js/faker';
+import bcrypt from 'bcryptjs';
+
+// Import seed data
+import { permissionSeeds } from './seedData/permission';
+import { roleSeeds } from './seedData/role';
+import { adminSeeds } from './seedData/admin';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("🌱 Starting database seed...");
+  console.log('🌱 Starting seed...');
 
-  // Create Permissions
-  const permissionGroups = [
-    {
-      group: "Admins",
-      groupOrder: 1,
-      permissions: [
-        { name: "admin.view", displayName: "View Admins", slug: "admin-view" },
-        { name: "admin.create", displayName: "Create Admin", slug: "admin-create" },
-        { name: "admin.update", displayName: "Update Admin", slug: "admin-update" },
-        { name: "admin.delete", displayName: "Delete Admin", slug: "admin-delete" },
-      ],
-    },
-    {
-      group: "Users",
-      groupOrder: 2,
-      permissions: [
-        { name: "user.view", displayName: "View Users", slug: "user-view" },
-        { name: "user.create", displayName: "Create User", slug: "user-create" },
-        { name: "user.update", displayName: "Update User", slug: "user-update" },
-        { name: "user.delete", displayName: "Delete User", slug: "user-delete" },
-      ],
-    },
-    {
-      group: "Roles",
-      groupOrder: 3,
-      permissions: [
-        { name: "role.view", displayName: "View Roles", slug: "role-view" },
-        { name: "role.create", displayName: "Create Role", slug: "role-create" },
-        { name: "role.update", displayName: "Update Role", slug: "role-update" },
-        { name: "role.delete", displayName: "Delete Role", slug: "role-delete" },
-      ],
-    },
-    {
-      group: "Permissions",
-      groupOrder: 4,
-      permissions: [
-        { name: "permission.view", displayName: "View Permissions", slug: "permission-view" },
-        { name: "permission.assign", displayName: "Assign Permissions", slug: "permission-assign" },
-      ],
-    },
-  ];
+  // Truncate tables in correct order (delete child tables before parent tables)
+  console.log('🗑️  Truncating tables...');
+  await prisma.adminRole.deleteMany();
+  await prisma.adminPermission.deleteMany();
+  await prisma.permissionRole.deleteMany();
+  await prisma.adminSession.deleteMany();
+  await prisma.userSession.deleteMany();
+  await prisma.admin.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.permission.deleteMany();
+  await prisma.role.deleteMany();
 
-  console.log("📝 Creating permissions...");
-  const createdPermissions: { id: bigint; name: string }[] = [];
+  console.log('✅ Truncated tables');
 
-  for (const group of permissionGroups) {
-    for (let i = 0; i < group.permissions.length; i++) {
-      const perm = group.permissions[i];
-      const permission = await db.permission.upsert({
-        where: { name: perm.name },
-        update: {},
-        create: {
-          name: perm.name,
-          displayName: perm.displayName,
-          slug: perm.slug,
-          group: group.group,
-          groupOrder: group.groupOrder,
-          order: i + 1,
+  // Seed permissions
+  console.log('🌱 Seeding permissions...');
+  for (const permission of permissionSeeds) {
+    await prisma.permission.create({
+      data: {
+        name: permission.name,
+        displayName: permission.displayName,
+        slug: permission.slug,
+        group: permission.group,
+        groupOrder: permission.groupOrder,
+        order: permission.order,
+      },
+    });
+  }
+  console.log('✅ Seeding permissions done');
+
+  // Seed roles
+  console.log('🌱 Seeding roles...');
+  for (const [index, role] of roleSeeds.entries()) {
+    const order = index + 1;
+
+    const createdRole = await prisma.role.create({
+      data: {
+        name: role.name,
+        displayName: role.displayName,
+        slug: role.slug,
+        description: role.description,
+        isDefault: role.isDefault,
+        order: order,
+      },
+    });
+
+    // Assign permissions to roles
+    if (role.slug === 'superadmin' || role.slug === 'admin') {
+      // Super admin and admin get all permissions
+      const permissions = await prisma.permission.findMany();
+      for (const permission of permissions) {
+        await prisma.permissionRole.create({
+          data: {
+            roleId: createdRole.id,
+            permissionId: permission.id,
+          },
+        });
+      }
+    } else {
+      // Other roles get limited permissions
+      const permissions = await prisma.permission.findMany({
+        where: {
+          slug: {
+            notIn: [
+              'admin.view',
+              'admin.create',
+              'admin.update',
+              'admin.delete',
+              'admin.status',
+              'role.view',
+              'role.create',
+              'role.update',
+              'role.delete',
+              'role.status',
+              'permission.view',
+              'permission.create',
+              'permission.update',
+              'permission.delete',
+            ],
+          },
         },
       });
-      createdPermissions.push({ id: permission.id, name: permission.name });
+
+      for (const permission of permissions) {
+        await prisma.permissionRole.create({
+          data: {
+            roleId: createdRole.id,
+            permissionId: permission.id,
+          },
+        });
+      }
     }
   }
-  console.log(`   ✓ Created ${createdPermissions.length} permissions`);
+  console.log('✅ Seeding roles done');
 
-  // Create Roles
-  console.log("👥 Creating roles...");
-  const superAdminRole = await db.role.upsert({
-    where: { slug: "super-admin" },
-    update: {},
-    create: {
-      name: "Super Admin",
-      displayName: "Super Administrator",
-      slug: "super-admin",
-      description: "Full system access with all permissions",
-      isDefault: false,
-      order: 1,
-    },
-  });
+  // Seed admins
+  console.log('🌱 Seeding admins...');
+  for (const admin of adminSeeds) {
+    const hashedPassword = await bcrypt.hash('password', 15);
 
-  const adminRole = await db.role.upsert({
-    where: { slug: "admin" },
-    update: {},
-    create: {
-      name: "Admin",
-      displayName: "Administrator",
-      slug: "admin",
-      description: "Administrative access with limited permissions",
-      isDefault: false,
-      order: 2,
-    },
-  });
-
-  const moderatorRole = await db.role.upsert({
-    where: { slug: "moderator" },
-    update: {},
-    create: {
-      name: "Moderator",
-      displayName: "Moderator",
-      slug: "moderator",
-      description: "Content moderation access",
-      isDefault: true,
-      order: 3,
-    },
-  });
-  console.log("   ✓ Created 3 roles");
-
-  // Assign all permissions to Super Admin role
-  console.log("🔗 Assigning permissions to roles...");
-  for (const perm of createdPermissions) {
-    await db.permissionRole.upsert({
-      where: {
-        permissionId_roleId: {
-          permissionId: perm.id,
-          roleId: superAdminRole.id,
-        },
-      },
-      update: {},
-      create: {
-        permissionId: perm.id,
-        roleId: superAdminRole.id,
+    const createdAdmin = await prisma.admin.create({
+      data: {
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        dob: new Date('1990-01-01'),
+        phone: admin.phone,
+        username: admin.username,
+        email: admin.email,
+        password: hashedPassword,
+        gender: admin.gender,
+        joinedDate: new Date(),
+        isActive: admin.isActive,
+        isVerified: admin.isVerified,
+        verifiedAt: new Date(),
+        verifiedByEmail: admin.verifiedByEmail,
+        verifiedByPhone: admin.verifiedByPhone,
       },
     });
-  }
 
-  // Assign user permissions to Admin role
-  const adminPermissions = createdPermissions.filter(
-    (p) => p.name.startsWith("user.") || p.name === "admin.view"
-  );
-  for (const perm of adminPermissions) {
-    await db.permissionRole.upsert({
-      where: {
-        permissionId_roleId: {
-          permissionId: perm.id,
-          roleId: adminRole.id,
-        },
-      },
-      update: {},
-      create: {
-        permissionId: perm.id,
-        roleId: adminRole.id,
-      },
+    // Assign roles to admins
+    let roleSlug = 'user';
+    if (createdAdmin.username === 'super_admin') {
+      roleSlug = 'superadmin';
+    } else if (createdAdmin.username === 'admin') {
+      roleSlug = 'admin';
+    } else if (createdAdmin.username === 'editor') {
+      roleSlug = 'editor';
+    }
+
+    const role = await prisma.role.findFirst({
+      where: { slug: roleSlug },
     });
-  }
 
-  // Assign view permissions to Moderator role
-  const moderatorPermissions = createdPermissions.filter((p) => p.name.endsWith(".view"));
-  for (const perm of moderatorPermissions) {
-    await db.permissionRole.upsert({
-      where: {
-        permissionId_roleId: {
-          permissionId: perm.id,
-          roleId: moderatorRole.id,
+    if (role) {
+      await prisma.adminRole.create({
+        data: {
+          adminId: createdAdmin.id,
+          roleId: role.id,
         },
-      },
-      update: {},
-      create: {
-        permissionId: perm.id,
-        roleId: moderatorRole.id,
-      },
-    });
+      });
+    }
   }
-  console.log("   ✓ Assigned permissions to roles");
+  console.log('✅ Seeding admins done');
 
-  // Create Super Admin user
-  console.log("👤 Creating super admin account...");
-  const hashedPassword = await bcrypt.hash("admin123", 12);
+  // Seed additional random admins
+  console.log('🌱 Seeding additional admins...');
+  const userRole = await prisma.role.findFirst({
+    where: { slug: 'user' },
+  });
 
-  const superAdmin = await db.admin.upsert({
-    where: { email: "admin@example.com" },
-    update: {},
-    create: {
-      email: "admin@example.com",
+  if (userRole) {
+    for (let i = 0; i < 10; i++) {
+      const hashedPassword = await bcrypt.hash('password', 15);
+
+      const admin = await prisma.admin.create({
+        data: {
+          firstName: faker.person.firstName(),
+          lastName: faker.person.lastName(),
+          dob: faker.date.birthdate(),
+          gender: 'male',
+          phone: faker.phone.number(),
+          username: faker.internet.username(),
+          email: faker.internet.email(),
+          password: hashedPassword,
+          joinedDate: new Date(),
+          isActive: true,
+          isVerified: true,
+          verifiedAt: new Date(),
+          verifiedByEmail: true,
+          verifiedByPhone: true,
+        },
+      });
+
+      await prisma.adminRole.create({
+        data: {
+          adminId: admin.id,
+          roleId: userRole.id,
+        },
+      });
+    }
+  }
+  console.log('✅ Seeding additional admins done');
+
+  // make 10 users
+  console.log('🌱 Seeding users...');
+
+  // user@user.com
+  // password
+  // user
+  // 1234567890
+
+  const hashedPassword = await bcrypt.hash('password', 15);
+  await prisma.user.create({
+    data: {
+      email: `user@user.com`,
       password: hashedPassword,
-      firstName: "Super",
-      lastName: "Admin",
-      isVerified: true,
+      username: 'user',
+      phone: '1234567890',
+      firstName: 'User',
+      lastName: 'User',
+      joinedDate: new Date(),
       isActive: true,
+      isVerified: true,
+      verifiedAt: new Date(),
+      verifiedByEmail: true,
+      verifiedByPhone: true,
+      isDeleted: false,
     },
   });
 
-  // Assign Super Admin role to the admin
-  await db.adminRole.upsert({
-    where: {
-      adminId_roleId: {
-        adminId: superAdmin.id,
-        roleId: superAdminRole.id,
+  for (let i = 0; i < 10; i++) {
+    const hashedPassword = await bcrypt.hash('password', 15);
+
+    await prisma.user.create({
+      data: {
+        firstName: faker.person.firstName(),
+        lastName: faker.person.lastName(),
+        dob: faker.date.birthdate(),
+        gender: 'male',
+        phone: faker.phone.number(),
+        username: faker.internet.username(),
+        email: faker.internet.email(),
+        password: hashedPassword,
+        joinedDate: new Date(),
+        isActive: true,
+        isVerified: true,
+        verifiedAt: new Date(),
+        verifiedByEmail: true,
+        verifiedByPhone: true,
       },
-    },
-    update: {},
-    create: {
-      adminId: superAdmin.id,
-      roleId: superAdminRole.id,
-    },
-  });
-  console.log("   ✓ Created super admin: admin@example.com / admin123");
+    });
+  }
 
-  console.log("\n✅ Database seeded successfully!");
+  console.log('✅ Seeding users done');
+
+  console.log('🎉 Seed completed successfully!');
 }
 
 main()
-  .catch((e) => {
-    console.error("❌ Seed failed:", e);
+  .catch((err) => {
+    console.error('❌ Seed failed:', err);
     process.exit(1);
   })
   .finally(async () => {
-    await db.$disconnect();
+    await prisma.$disconnect();
+    await pool.end();
   });

@@ -1,9 +1,9 @@
-import jwt from 'jsonwebtoken'
+import jwt, { type SignOptions } from 'jsonwebtoken'
 import { randomBytes } from 'crypto'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this'
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d'
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? '7d'
+const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN ?? '30d'
 
 export interface JWTPayload {
   id: bigint | string  // Can be bigint or string representation
@@ -15,9 +15,10 @@ export interface JWTPayload {
  * Generate access token
  */
 export function generateAccessToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
-  })
+  const options: SignOptions = {
+    expiresIn: JWT_EXPIRES_IN as SignOptions['expiresIn']
+  }
+  return jwt.sign(payload, JWT_SECRET, options)
 }
 
 /**
@@ -33,8 +34,11 @@ export function generateRefreshToken(): string {
 export function verifyToken(token: string): JWTPayload {
   try {
     return jwt.verify(token, JWT_SECRET) as JWTPayload
-  } catch (error) {
-    throw new Error('Invalid or expired token')
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Invalid or expired token: ${error.message}`)
+    }
+    throw new Error(`Invalid or expired token: ${String(error)}`)
   }
 }
 

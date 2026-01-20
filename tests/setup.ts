@@ -1,11 +1,12 @@
 import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
-import { db } from '../src/utils/db'
+import { config } from 'dotenv'
+import path from 'path'
 
-// Set test environment - DATABASE_URL loaded from .env by Bun
+// Load environment variables from .env.test file
+config({ path: path.resolve(__dirname, '../.env.test') })
+
+// Ensure test environment is set
 process.env.NODE_ENV = 'test'
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key'
-process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h'
-process.env.LOG_LEVEL = 'error'
 
 // Global test hooks
 beforeAll(async () => {

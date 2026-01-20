@@ -79,8 +79,9 @@ export class TestDB {
     displayName?: string
     permissions?: bigint[]
   }) {
-    const roleName = data?.name || `test-role-${Date.now()}`
-    
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(7)}`
+    const roleName = data?.name || `test-role-${uniqueId}`
+
     const role = await db.role.create({
       data: {
         name: roleName,
@@ -112,13 +113,14 @@ export class TestDB {
     slug?: string
     group?: string
   }) {
-    const permName = data?.name || `test-permission-${Date.now()}`
-    
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(7)}`
+    const permName = data?.name || `test-permission-${uniqueId}`
+
     return await db.permission.create({
       data: {
         name: permName,
         displayName: permName,
-        slug: data?.slug || `test.permission`,
+        slug: data?.slug || `test.permission.${uniqueId}`,
         group: data?.group || 'Test',
         groupOrder: 1,
         order: 1,
@@ -170,16 +172,18 @@ export class TestDB {
     await db.permissionRole.deleteMany({})
     await db.admin.deleteMany({
       where: {
-        email: {
-          contains: 'test-'
-        }
+        OR: [
+          { email: { contains: 'test-' } },
+          { email: { contains: '@test.com' } }
+        ]
       }
     })
     await db.user.deleteMany({
       where: {
-        email: {
-          contains: 'test-'
-        }
+        OR: [
+          { email: { contains: 'test-' } },
+          { email: { contains: '@test.com' } }
+        ]
       }
     })
     await db.role.deleteMany({
@@ -191,9 +195,10 @@ export class TestDB {
     })
     await db.permission.deleteMany({
       where: {
-        name: {
-          contains: 'test-'
-        }
+        OR: [
+          { name: { contains: 'test-' } },
+          { slug: { contains: 'test.' } }
+        ]
       }
     })
   }

@@ -1,32 +1,23 @@
-import { describe, it, expect, beforeAll } from 'vitest'
-import { ApiClient } from '../helpers/api-client'
+import { describe, it, expect } from 'vitest'
+import { request } from '../helpers'
 
 describe('Health Check E2E', () => {
-  let client: ApiClient
-
-  beforeAll(() => {
-    client = new ApiClient()
-  })
-
   describe('GET /', () => {
     it('should return health status', async () => {
       // Act
-      const response = await client.healthCheck()
+      const response = await request().get('/')
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data).toHaveProperty('status')
-      expect(response.data).toHaveProperty('message')
-      expect(response.data).toHaveProperty('timestamp')
-      expect(response.data.status).toBe('ok')
+      expect(response.body).toHaveProperty('status')
+      expect(response.body).toHaveProperty('message')
+      expect(response.body).toHaveProperty('timestamp')
+      expect(response.body.status).toBe('ok')
     })
 
     it('should not require authentication', async () => {
-      // Arrange
-      client.clearToken()
-
       // Act
-      const response = await client.healthCheck()
+      const response = await request().get('/')
 
       // Assert
       expect(response.status).toBe(200)
@@ -34,17 +25,17 @@ describe('Health Check E2E', () => {
 
     it('should include request ID header', async () => {
       // Act
-      const rawResponse = await fetch('http://localhost:3000/')
-      
+      const response = await request().get('/')
+
       // Assert
-      expect(rawResponse.headers.has('x-request-id')).toBe(true)
+      expect(response.headers.has('x-request-id')).toBe(true)
     })
   })
 
   describe('GET /docs', () => {
     it('should return API documentation', async () => {
       // Act
-      const response = await fetch('http://localhost:3000/docs')
+      const response = await request().get('/docs')
 
       // Assert
       expect(response.status).toBe(200)
@@ -53,7 +44,7 @@ describe('Health Check E2E', () => {
 
     it('should not require authentication', async () => {
       // Act
-      const response = await fetch('http://localhost:3000/docs')
+      const response = await request().get('/docs')
 
       // Assert
       expect(response.status).toBe(200)

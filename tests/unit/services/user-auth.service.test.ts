@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { UserAuthService } from '../../../src/modules/user-auth/service'
 import { TestDB } from '../../helpers/test-db'
+import { db } from '../../../src/utils/db'
 
 describe('UserAuthService', () => {
   beforeEach(async () => {

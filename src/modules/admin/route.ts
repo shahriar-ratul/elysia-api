@@ -1,81 +1,103 @@
-// Route file for admin module - all admin endpoints defined here
 import { Elysia, t } from 'elysia'
-import { adminAuth, requirePermission } from '../../middleware/auth'
-import { Action, Subject } from '../../utils/permissions'
+import { adminGuard } from '../../middleware/ability.guard'
+import { db } from '../../utils/db'
 
-export const adminRoutes = new Elysia({ 
+/**
+ * Admin User Management Routes
+ * All routes require admin auth + specific permissions
+ */
+export const adminRoutes = new Elysia({
   prefix: '/admin',
-  tags: ['Admin'] // For OpenAPI grouping
+  tags: ['Admin']
 })
-  .use(adminAuth)
-  .use(requirePermission(Action.List, Subject.User))
+  .use(adminGuard)
+
+  // GET /users - List all users
   .get(
     '/users',
     async ({ logger, requestId, query, admin }) => {
       logger.info({ requestId, adminId: admin.id, query }, 'Fetching users list')
-      // Add your logic here
-      return { 
+      return {
         users: [],
-        total: 0 
+        total: 0
       }
     },
     {
+      permissions: ['users.list'],
       query: t.Object({
         page: t.Optional(t.Number({ minimum: 1, default: 1 })),
-        limit: t.Optional(t.Number({ minimum: 1, maximum: 100, default: 10 })),
+        limit: t.Optional(t.Number({ minimum: 1, maximum: 100, default: 10 }))
       }),
       detail: {
         summary: 'List all users',
-        description: 'Get a paginated list of all users (requires users.list permission)',
-        tags: ['Admin'],
+        description: 'Get a paginated list of all users',
         security: [{ bearerAuth: [] }]
       }
     }
   )
-  .use(requirePermission(Action.Read, Subject.User))
+
+  // GET /users/:id - Get user by ID
   .get(
     '/users/:id',
-    async ({ logger, requestId, params, admin }) => {
+    async ({ logger, requestId, params, admin, set }) => {
       logger.info({ requestId, adminId: admin.id, userId: params.id }, 'Fetching user details')
-      // Add your logic here
-      return { 
-        id: params.id,
-        username: 'example' 
+
+      const user = await db.user.findUnique({
+        where: { id: BigInt(params.id) }
+      })
+
+      if (!user) {
+        set.status = 404
+        return { error: 'User not found' }
+      }
+
+      return {
+        id: user.id.toString(),
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isActive: user.isActive
       }
     },
     {
-      params: t.Object({
-        id: t.String()
-      }),
+      permissions: ['users.read'],
+      params: t.Object({ id: t.String() }),
       detail: {
         summary: 'Get user by ID',
-        description: 'Get detailed information about a specific user (requires users.read permission)',
-        tags: ['Admin'],
+        description: 'Get detailed information about a specific user',
         security: [{ bearerAuth: [] }]
       }
     }
   )
-  .use(requirePermission(Action.Delete, Subject.User))
+
+  // DELETE /users/:id - Delete user
   .delete(
     '/users/:id',
-    async ({ logger, requestId, params, admin }) => {
+    async ({ logger, requestId, params, admin, set }) => {
       logger.info({ requestId, adminId: admin.id, userId: params.id }, 'Deleting user')
-      // Add your logic here
+
+      const user = await db.user.findUnique({
+        where: { id: BigInt(params.id) }
+      })
+
+      if (!user) {
+        set.status = 404
+        return { error: 'User not found' }
+      }
+
+      await db.user.update({
+        where: { id: BigInt(params.id) },
+        data: { isDeleted: true }
+      })
+
       return { success: true }
     },
     {
-      params: t.Object({
-        id: t.String()
-      }),
-      response: {
-        200: t.Object({
-          success: t.Boolean()
-        })
-      },
+      permissions: ['users.delete'],
+      params: t.Object({ id: t.String() }),
       detail: {
         summary: 'Delete user',
-        description: 'Delete a user account (requires users.delete permission)',
-        tags: ['Admin'],
+        description: 'Delete a user account',
         security: [{ bearerAuth: [] }]
       }
     }

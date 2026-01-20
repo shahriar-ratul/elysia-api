@@ -1,23 +1,33 @@
 import { Elysia, t } from 'elysia'
-import { adminAuth, requirePermission } from '../../middleware/auth'
-import { Action, Subject } from '../../utils/permissions'
+import { adminGuard } from '../../middleware/ability.guard'
 import { RoleService } from './service'
 
-export const roleRoutes = new Elysia({ 
+/**
+ * Role Management Routes
+ * 
+ * Similar to NestJS:
+ * @ApiTags('roles')
+ * @Controller({ version: '1', path: 'roles' })
+ * @UseGuards(JwtAuthGuard)
+ * @UseGuards(AbilityGuard)
+ */
+export const roleRoutes = new Elysia({
   prefix: '/admin/roles',
   tags: ['Roles']
 })
-  .use(adminAuth)
-  .use(requirePermission(Action.List, Subject.Role))
+  // Apply guards - similar to @UseGuards(JwtAuthGuard, AbilityGuard)
+  .use(adminGuard)
+
+  // GET / - List all roles
+  // Similar to @Get() @SetMetadata('permissions', ['roles.list'])
   .get(
     '/',
     async ({ logger, requestId, admin }) => {
       logger.info({ requestId, adminId: admin.id }, 'Fetching roles list')
-      
       const roles = await RoleService.getAllRoles()
-      
-      return { 
-        roles: roles.map(role => ({
+
+      return {
+        roles: roles.map((role) => ({
           id: role.id.toString(),
           name: role.name,
           displayName: role.displayName,
@@ -26,16 +36,17 @@ export const roleRoutes = new Elysia({
           isDefault: role.isDefault,
           order: role.order,
           isActive: role.isActive,
-          permissions: role.permissions.map(p => ({
+          permissions: role.permissions.map((p) => ({
             id: p.permission.id.toString(),
             name: p.permission.name,
-            slug: p.permission.slug,
+            slug: p.permission.slug
           }))
         })),
         total: roles.length
       }
     },
     {
+      permissions: ['roles.list'],
       detail: {
         summary: 'List all roles',
         description: 'Get all roles with their permissions (requires roles.list permission)',
@@ -44,19 +55,20 @@ export const roleRoutes = new Elysia({
       }
     }
   )
-  
-  .use(requirePermission(Action.Read, Subject.Role))
+
+  // GET /:id - Get role by ID
+  // Similar to @Get(':id') @SetMetadata('permissions', ['roles.read'])
   .get(
     '/:id',
-    async ({ logger, requestId, params, admin }) => {
+    async ({ params, logger, requestId, admin, set }) => {
       logger.info({ requestId, adminId: admin.id, roleId: params.id }, 'Fetching role details')
-      
       const role = await RoleService.getRoleById(BigInt(params.id))
-      
+
       if (!role) {
-        throw new Error('Role not found')
+        set.status = 404
+        return { error: 'Role not found' }
       }
-      
+
       return {
         id: role.id.toString(),
         name: role.name,
@@ -66,150 +78,156 @@ export const roleRoutes = new Elysia({
         isDefault: role.isDefault,
         order: role.order,
         isActive: role.isActive,
-        permissions: role.permissions.map(p => ({
+        permissions: role.permissions.map((p) => ({
           id: p.permission.id.toString(),
           name: p.permission.name,
-          displayName: p.permission.displayName,
-          slug: p.permission.slug,
-          group: p.permission.group,
+          slug: p.permission.slug
         }))
       }
     },
     {
-      params: t.Object({
-        id: t.String()
-      }),
+      permissions: ['roles.read'],
+      params: t.Object({ id: t.String() }),
       detail: {
         summary: 'Get role by ID',
-        description: 'Get detailed information about a specific role (requires roles.read permission)',
+        description: 'Get a specific role with its permissions (requires roles.read permission)',
         tags: ['Roles'],
         security: [{ bearerAuth: [] }]
       }
     }
   )
-  
-  .use(requirePermission(Action.Create, Subject.Role))
+
+  // POST / - Create role
+  // Similar to @Post() @SetMetadata('permissions', ['roles.create'])
   .post(
     '/',
-    async ({ logger, requestId, body, admin }) => {
-      logger.info({ requestId, adminId: admin.id, roleName: body.name }, 'Creating new role')
-      
-      const role = await RoleService.createRole({
-        ...body,
-        createdBy: admin.id,
-      })
-      
+    async ({ body, logger, requestId, admin }) => {
+      logger.info({ requestId, adminId: admin.id, roleName: body.name }, 'Creating role')
+      const role = await RoleService.createRole(body)
+
       return {
         id: role.id.toString(),
         name: role.name,
         displayName: role.displayName,
         slug: role.slug,
+        description: role.description,
+        isDefault: role.isDefault,
+        order: role.order,
+        isActive: role.isActive
       }
     },
     {
+      permissions: ['roles.create'],
       body: t.Object({
-        name: t.String({ minLength: 1 }),
-        displayName: t.String({ minLength: 1 }),
-        slug: t.String({ minLength: 1 }),
+        name: t.String(),
+        displayName: t.String(),
+        slug: t.String(),
         description: t.Optional(t.String()),
         isDefault: t.Optional(t.Boolean()),
-        order: t.Optional(t.Number()),
+        order: t.Optional(t.Number())
       }),
       detail: {
-        summary: 'Create new role',
+        summary: 'Create role',
         description: 'Create a new role (requires roles.create permission)',
         tags: ['Roles'],
         security: [{ bearerAuth: [] }]
       }
     }
   )
-  
-  .use(requirePermission(Action.Update, Subject.Role))
+
+  // PATCH /:id - Update role
+  // Similar to @Patch(':id') @SetMetadata('permissions', ['roles.update'])
   .patch(
     '/:id',
-    async ({ logger, requestId, params, body, admin }) => {
+    async ({ params, body, logger, requestId, admin }) => {
       logger.info({ requestId, adminId: admin.id, roleId: params.id }, 'Updating role')
-      
-      const role = await RoleService.updateRole(BigInt(params.id), {
-        ...body,
-        updatedBy: admin.id,
-      })
-      
+      const role = await RoleService.updateRole(BigInt(params.id), body)
+
       return {
         id: role.id.toString(),
         name: role.name,
         displayName: role.displayName,
+        slug: role.slug,
         description: role.description,
+        isDefault: role.isDefault,
+        order: role.order,
+        isActive: role.isActive
       }
     },
     {
-      params: t.Object({
-        id: t.String()
-      }),
+      permissions: ['roles.update'],
+      params: t.Object({ id: t.String() }),
       body: t.Object({
-        displayName: t.Optional(t.String({ minLength: 1 })),
+        displayName: t.Optional(t.String()),
         description: t.Optional(t.String()),
-        order: t.Optional(t.Number()),
         isActive: t.Optional(t.Boolean()),
+        order: t.Optional(t.Number())
       }),
       detail: {
         summary: 'Update role',
-        description: 'Update an existing role (requires roles.update permission)',
+        description: 'Update a role (requires roles.update permission)',
         tags: ['Roles'],
         security: [{ bearerAuth: [] }]
       }
     }
   )
-  
-  .use(requirePermission(Action.Update, Subject.Role))
+
+  // POST /:id/permissions - Assign permissions to role
+  // Similar to @Post(':id/permissions') @SetMetadata('permissions', ['roles.update'])
   .post(
     '/:id/permissions',
-    async ({ logger, requestId, params, body, admin }) => {
-      logger.info({ requestId, adminId: admin.id, roleId: params.id }, 'Assigning permissions to role')
-      
-      const permissionIds = body.permissionIds.map(id => BigInt(id))
-      const role = await RoleService.assignPermissions(BigInt(params.id), permissionIds)
-      
+    async ({ params, body, logger, requestId, admin }) => {
+      logger.info(
+        { requestId, adminId: admin.id, roleId: params.id },
+        'Assigning permissions to role'
+      )
+      const role = await RoleService.assignPermissions(
+        BigInt(params.id),
+        body.permissionIds.map((id: string) => BigInt(id))
+      )
+
+      if (!role) {
+        return { error: 'Role not found' }
+      }
+
       return {
-        id: role!.id.toString(),
-        name: role!.name,
-        permissions: role!.permissions.map(p => ({
+        id: role.id.toString(),
+        name: role.name,
+        permissions: role.permissions.map((p) => ({
           id: p.permission.id.toString(),
           name: p.permission.name,
-          slug: p.permission.slug,
+          slug: p.permission.slug
         }))
       }
     },
     {
-      params: t.Object({
-        id: t.String()
-      }),
+      permissions: ['roles.update'],
+      params: t.Object({ id: t.String() }),
       body: t.Object({
         permissionIds: t.Array(t.String())
       }),
       detail: {
         summary: 'Assign permissions to role',
-        description: 'Assign permissions to a role (requires roles.update permission)',
+        description: 'Replace all permissions for a role (requires roles.update permission)',
         tags: ['Roles'],
         security: [{ bearerAuth: [] }]
       }
     }
   )
-  
-  .use(requirePermission(Action.Delete, Subject.Role))
+
+  // DELETE /:id - Delete role
+  // Similar to @Delete(':id') @SetMetadata('permissions', ['roles.delete'])
   .delete(
     '/:id',
-    async ({ logger, requestId, params, admin }) => {
+    async ({ params, logger, requestId, admin }) => {
       logger.info({ requestId, adminId: admin.id, roleId: params.id }, 'Deleting role')
-      
-      await RoleService.deleteRole(BigInt(params.id), admin.id)
-      
+      await RoleService.deleteRole(BigInt(params.id))
+
       return { success: true }
     },
     {
-      params: t.Object({
-        id: t.String()
-      }),
+      permissions: ['roles.delete'],
+      params: t.Object({ id: t.String() }),
       detail: {
         summary: 'Delete role',
         description: 'Soft delete a role (requires roles.delete permission)',

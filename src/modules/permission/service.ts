@@ -123,8 +123,8 @@ export class PermissionService {
     if (!admin) return []
 
     // Collect all permissions (from roles + direct permissions)
-    const permissionsSet = new Set<number>()
-    const permissions: any[] = []
+    const permissionsSet = new Set<bigint>()
+    const permissions: { id: bigint; name: string; slug: string; group: string }[] = []
 
     // Add permissions from roles
     admin.roles.forEach(adminRole => {

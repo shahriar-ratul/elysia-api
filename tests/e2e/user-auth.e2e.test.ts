@@ -1,14 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { ApiClient } from '../helpers/api-client'
-import { TestDB } from '../helpers/test-db'
+import { describe, it, expect, beforeEach, afterAll } from 'vitest'
+import { request, TestDB } from '../helpers'
 
 describe('User Authentication E2E', () => {
-  let client: ApiClient
-
-  beforeAll(() => {
-    client = new ApiClient()
-  })
-
   beforeEach(async () => {
     await TestDB.cleanup()
   })
@@ -20,19 +13,21 @@ describe('User Authentication E2E', () => {
   describe('POST /api/v1/auth/sign-up', () => {
     it('should register new user successfully', async () => {
       // Act
-      const response = await client.userSignUp({
-        email: 'newuser@test.com',
-        password: 'password123',
-        firstName: 'John',
-        lastName: 'Doe'
-      })
+      const response = await request()
+        .post('/api/v1/auth/sign-up')
+        .send({
+          email: 'newuser@test.com',
+          password: 'password123',
+          firstName: 'John',
+          lastName: 'Doe'
+        })
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data).toHaveProperty('id')
-      expect(response.data.email).toBe('newuser@test.com')
-      expect(response.data.firstName).toBe('John')
-      expect(response.data.lastName).toBe('Doe')
+      expect(response.body).toHaveProperty('id')
+      expect(response.body.email).toBe('newuser@test.com')
+      expect(response.body.firstName).toBe('John')
+      expect(response.body.lastName).toBe('Doe')
     })
 
     it('should return 400 for duplicate email', async () => {
@@ -40,22 +35,20 @@ describe('User Authentication E2E', () => {
       await TestDB.createTestUser({ email: 'existing@test.com' })
 
       // Act
-      const response = await client.userSignUp({
-        email: 'existing@test.com',
-        password: 'password123'
-      })
+      const response = await request()
+        .post('/api/v1/auth/sign-up')
+        .send({ email: 'existing@test.com', password: 'password123' })
 
       // Assert
       expect(response.status).not.toBe(200)
-      expect(response.data).toHaveProperty('error')
+      expect(response.body).toHaveProperty('error')
     })
 
     it('should require valid email format', async () => {
       // Act
-      const response = await client.userSignUp({
-        email: 'invalid-email',
-        password: 'password123'
-      })
+      const response = await request()
+        .post('/api/v1/auth/sign-up')
+        .send({ email: 'invalid-email', password: 'password123' })
 
       // Assert
       expect(response.status).not.toBe(200)
@@ -63,10 +56,9 @@ describe('User Authentication E2E', () => {
 
     it('should require minimum password length', async () => {
       // Act
-      const response = await client.userSignUp({
-        email: 'user@test.com',
-        password: '123' // Too short
-      })
+      const response = await request()
+        .post('/api/v1/auth/sign-up')
+        .send({ email: 'user@test.com', password: '123' })
 
       // Assert
       expect(response.status).not.toBe(200)
@@ -82,30 +74,28 @@ describe('User Authentication E2E', () => {
       })
 
       // Act
-      const response = await client.userSignIn({
-        email: 'user@test.com',
-        password: 'password123'
-      })
+      const response = await request()
+        .post('/api/v1/auth/sign-in')
+        .send({ email: 'user@test.com', password: 'password123' })
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data).toHaveProperty('user')
-      expect(response.data).toHaveProperty('token')
-      expect(response.data).toHaveProperty('refreshToken')
-      expect(response.data).toHaveProperty('expiresAt')
-      expect(response.data.user.email).toBe('user@test.com')
+      expect(response.body).toHaveProperty('user')
+      expect(response.body).toHaveProperty('token')
+      expect(response.body).toHaveProperty('refreshToken')
+      expect(response.body).toHaveProperty('expiresAt')
+      expect(response.body.user.email).toBe('user@test.com')
     })
 
     it('should return error for invalid email', async () => {
       // Act
-      const response = await client.userSignIn({
-        email: 'nonexistent@test.com',
-        password: 'password123'
-      })
+      const response = await request()
+        .post('/api/v1/auth/sign-in')
+        .send({ email: 'nonexistent@test.com', password: 'password123' })
 
       // Assert
       expect(response.status).not.toBe(200)
-      expect(response.data).toHaveProperty('error')
+      expect(response.body).toHaveProperty('error')
     })
 
     it('should return error for wrong password', async () => {
@@ -116,58 +106,52 @@ describe('User Authentication E2E', () => {
       })
 
       // Act
-      const response = await client.userSignIn({
-        email: 'user@test.com',
-        password: 'wrongpassword'
-      })
+      const response = await request()
+        .post('/api/v1/auth/sign-in')
+        .send({ email: 'user@test.com', password: 'wrongpassword' })
 
       // Assert
       expect(response.status).not.toBe(200)
-      expect(response.data).toHaveProperty('error')
+      expect(response.body).toHaveProperty('error')
     })
   })
 
   describe('GET /api/v1/auth/me', () => {
     it('should return user profile when authenticated', async () => {
       // Arrange
-      const user = await TestDB.createTestUser({
+      await TestDB.createTestUser({
         email: 'user@test.com',
         password: 'password123'
       })
-      
-      const signInResponse = await client.userSignIn({
-        email: 'user@test.com',
-        password: 'password123'
-      })
-      
-      client.setToken(signInResponse.data.token)
+
+      const signInResponse = await request()
+        .post('/api/v1/auth/sign-in')
+        .send({ email: 'user@test.com', password: 'password123' })
+
+      const token = signInResponse.body.token
 
       // Act
-      const response = await client.getUserProfile()
+      const response = await request().get('/api/v1/auth/me').auth(token)
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data).toHaveProperty('id')
-      expect(response.data.email).toBe('user@test.com')
+      expect(response.body).toHaveProperty('id')
+      expect(response.body.email).toBe('user@test.com')
     })
 
     it('should return 401 without token', async () => {
-      // Arrange
-      client.clearToken()
-
       // Act
-      const response = await client.getUserProfile()
+      const response = await request().get('/api/v1/auth/me')
 
       // Assert
       expect(response.status).toBe(401)
     })
 
     it('should return 401 with invalid token', async () => {
-      // Arrange
-      client.setToken('invalid-token')
-
       // Act
-      const response = await client.getUserProfile()
+      const response = await request()
+        .get('/api/v1/auth/me')
+        .auth('invalid-token')
 
       // Assert
       expect(response.status).toBe(401)
@@ -181,20 +165,19 @@ describe('User Authentication E2E', () => {
         email: 'user@test.com',
         password: 'password123'
       })
-      
-      const signInResponse = await client.userSignIn({
-        email: 'user@test.com',
-        password: 'password123'
-      })
-      
-      client.setToken(signInResponse.data.token)
+
+      const signInResponse = await request()
+        .post('/api/v1/auth/sign-in')
+        .send({ email: 'user@test.com', password: 'password123' })
+
+      const token = signInResponse.body.token
 
       // Act
-      const response = await client.userSignOut()
+      const response = await request().post('/api/v1/auth/sign-out').auth(token)
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data.success).toBe(true)
+      expect(response.body.success).toBe(true)
     })
 
     it('should invalidate token after sign out', async () => {
@@ -203,17 +186,16 @@ describe('User Authentication E2E', () => {
         email: 'user@test.com',
         password: 'password123'
       })
-      
-      const signInResponse = await client.userSignIn({
-        email: 'user@test.com',
-        password: 'password123'
-      })
-      
-      client.setToken(signInResponse.data.token)
-      await client.userSignOut()
+
+      const signInResponse = await request()
+        .post('/api/v1/auth/sign-in')
+        .send({ email: 'user@test.com', password: 'password123' })
+
+      const token = signInResponse.body.token
+      await request().post('/api/v1/auth/sign-out').auth(token)
 
       // Act - Try to use the same token
-      const response = await client.getUserProfile()
+      const response = await request().get('/api/v1/auth/me').auth(token)
 
       // Assert
       expect(response.status).not.toBe(200)

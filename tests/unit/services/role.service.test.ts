@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { RoleService } from '../../../src/modules/role/service'
 import { TestDB } from '../../helpers/test-db'
+import { db } from '../../../src/utils/db'
 
 describe('RoleService', () => {
   beforeEach(async () => {
@@ -14,16 +15,17 @@ describe('RoleService', () => {
   describe('createRole', () => {
     it('should create new role', async () => {
       // Act
+      const uniqueId = Date.now()
       const role = await RoleService.createRole({
-        name: 'moderator',
+        name: `test-moderator-${uniqueId}`,
         displayName: 'Moderator',
-        slug: 'moderator',
+        slug: `test-moderator-${uniqueId}`,
         description: 'Moderator role'
       })
 
       // Assert
       expect(role).toHaveProperty('id')
-      expect(role.name).toBe('moderator')
+      expect(role.name).toBe(`test-moderator-${uniqueId}`)
       expect(role.displayName).toBe('Moderator')
     })
   })
@@ -31,8 +33,9 @@ describe('RoleService', () => {
   describe('getAllRoles', () => {
     it('should return all active roles', async () => {
       // Arrange
-      await TestDB.createTestRole({ name: 'role1' })
-      await TestDB.createTestRole({ name: 'role2' })
+      const uniqueId = Date.now()
+      await TestDB.createTestRole({ name: `test-role1-${uniqueId}` })
+      await TestDB.createTestRole({ name: `test-role2-${uniqueId}` })
 
       // Act
       const roles = await RoleService.getAllRoles()
@@ -43,7 +46,8 @@ describe('RoleService', () => {
 
     it('should not return deleted roles', async () => {
       // Arrange
-      const role = await TestDB.createTestRole({ name: 'deleted-role' })
+      const uniqueId = Date.now()
+      const role = await TestDB.createTestRole({ name: `test-deleted-role-${uniqueId}` })
       await db.role.update({
         where: { id: role.id },
         data: { isDeleted: true }
@@ -53,7 +57,7 @@ describe('RoleService', () => {
       const roles = await RoleService.getAllRoles()
 
       // Assert
-      const deletedRole = roles.find(r => r.name === 'deleted-role')
+      const deletedRole = roles.find(r => r.name === `test-deleted-role-${uniqueId}`)
       expect(deletedRole).toBeUndefined()
     })
   })

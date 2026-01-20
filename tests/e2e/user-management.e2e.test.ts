@@ -1,31 +1,23 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { ApiClient } from '../helpers/api-client'
-import { TestDB } from '../helpers/test-db'
+import { describe, it, expect, beforeEach, afterAll } from 'vitest'
+import { request, TestDB } from '../helpers'
 
 describe('User Management E2E (Admin)', () => {
-  let client: ApiClient
   let adminToken: string
-
-  beforeAll(async () => {
-    client = new ApiClient()
-  })
 
   beforeEach(async () => {
     await TestDB.cleanup()
-    
+
     // Create super admin
     await TestDB.createSuperAdmin({
       email: 'superadmin@test.com',
       password: 'admin123'
     })
-    
-    const signInResponse = await client.adminSignIn({
-      email: 'superadmin@test.com',
-      password: 'admin123'
-    })
-    
-    adminToken = signInResponse.data.token
-    client.setToken(adminToken)
+
+    const signInResponse = await request()
+      .post('/api/v1/admin/auth/sign-in')
+      .send({ email: 'superadmin@test.com', password: 'admin123' })
+
+    adminToken = signInResponse.body.token
   })
 
   afterAll(async () => {
@@ -35,39 +27,40 @@ describe('User Management E2E (Admin)', () => {
   describe('GET /api/v1/admin/users', () => {
     it('should list all users', async () => {
       // Arrange
-      await TestDB.createTestUser({ email: 'user1@test.com' })
-      await TestDB.createTestUser({ email: 'user2@test.com' })
+      await TestDB.createTestUser({ email: 'test-user1@test.com' })
+      await TestDB.createTestUser({ email: 'test-user2@test.com' })
 
       // Act
-      const response = await client.listUsers()
+      const response = await request()
+        .get('/api/v1/admin/users')
+        .auth(adminToken)
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data).toHaveProperty('users')
-      expect(response.data).toHaveProperty('total')
-      expect(response.data.users).toBeInstanceOf(Array)
+      expect(response.body).toHaveProperty('users')
+      expect(response.body).toHaveProperty('total')
+      expect(response.body.users).toBeInstanceOf(Array)
     })
 
     it('should support pagination', async () => {
       // Arrange
       for (let i = 0; i < 15; i++) {
-        await TestDB.createTestUser({ email: `user${i}@test.com` })
+        await TestDB.createTestUser({ email: `test-user${i}@test.com` })
       }
 
       // Act
-      const response = await client.listUsers({ page: 1, limit: 10 })
+      const response = await request()
+        .get('/api/v1/admin/users?page=1&limit=10')
+        .auth(adminToken)
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data.users.length).toBeLessThanOrEqual(10)
+      expect(response.body.users.length).toBeLessThanOrEqual(10)
     })
 
     it('should require authentication', async () => {
-      // Arrange
-      client.clearToken()
-
       // Act
-      const response = await client.listUsers()
+      const response = await request().get('/api/v1/admin/users')
 
       // Assert
       expect(response.status).not.toBe(200)
@@ -79,20 +72,19 @@ describe('User Management E2E (Admin)', () => {
         email: 'limited@test.com',
         password: 'admin123'
       })
-      
-      const signInResponse = await client.adminSignIn({
-        email: 'limited@test.com',
-        password: 'admin123'
-      })
-      
-      client.setToken(signInResponse.data.token)
+
+      const signInResponse = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'limited@test.com', password: 'admin123' })
 
       // Act
-      const response = await client.listUsers()
+      const response = await request()
+        .get('/api/v1/admin/users')
+        .auth(signInResponse.body.token)
 
       // Assert
       expect(response.status).not.toBe(200)
-      expect(response.data.error).toContain('permission')
+      expect(response.body.error).toContain('permission')
     })
   })
 
@@ -100,22 +92,26 @@ describe('User Management E2E (Admin)', () => {
     it('should return user details', async () => {
       // Arrange
       const user = await TestDB.createTestUser({
-        email: 'user@test.com',
+        email: 'test-user@test.com',
         firstName: 'John'
       })
 
       // Act
-      const response = await client.getUser(user.id.toString())
+      const response = await request()
+        .get(`/api/v1/admin/users/${user.id}`)
+        .auth(adminToken)
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data.id).toBe(user.id.toString())
-      expect(response.data).toHaveProperty('username')
+      expect(response.body.id).toBe(user.id.toString())
+      expect(response.body).toHaveProperty('email')
     })
 
     it('should return 404 for non-existent user', async () => {
       // Act
-      const response = await client.getUser('99999')
+      const response = await request()
+        .get('/api/v1/admin/users/99999')
+        .auth(adminToken)
 
       // Assert
       expect(response.status).not.toBe(200)
@@ -128,20 +124,19 @@ describe('User Management E2E (Admin)', () => {
         email: 'limited@test.com',
         password: 'admin123'
       })
-      
-      const signInResponse = await client.adminSignIn({
-        email: 'limited@test.com',
-        password: 'admin123'
-      })
-      
-      client.setToken(signInResponse.data.token)
+
+      const signInResponse = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'limited@test.com', password: 'admin123' })
 
       // Act
-      const response = await client.getUser(user.id.toString())
+      const response = await request()
+        .get(`/api/v1/admin/users/${user.id}`)
+        .auth(signInResponse.body.token)
 
       // Assert
       expect(response.status).not.toBe(200)
-      expect(response.data.error).toContain('permission')
+      expect(response.body.error).toContain('permission')
     })
   })
 
@@ -149,15 +144,17 @@ describe('User Management E2E (Admin)', () => {
     it('should delete user', async () => {
       // Arrange
       const user = await TestDB.createTestUser({
-        email: 'user@test.com'
+        email: 'test-user@test.com'
       })
 
       // Act
-      const response = await client.deleteUser(user.id.toString())
+      const response = await request()
+        .delete(`/api/v1/admin/users/${user.id}`)
+        .auth(adminToken)
 
       // Assert
       expect(response.status).toBe(200)
-      expect(response.data.success).toBe(true)
+      expect(response.body.success).toBe(true)
     })
 
     it('should require users.delete permission', async () => {
@@ -167,25 +164,26 @@ describe('User Management E2E (Admin)', () => {
         email: 'limited@test.com',
         password: 'admin123'
       })
-      
-      const signInResponse = await client.adminSignIn({
-        email: 'limited@test.com',
-        password: 'admin123'
-      })
-      
-      client.setToken(signInResponse.data.token)
+
+      const signInResponse = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'limited@test.com', password: 'admin123' })
 
       // Act
-      const response = await client.deleteUser(user.id.toString())
+      const response = await request()
+        .delete(`/api/v1/admin/users/${user.id}`)
+        .auth(signInResponse.body.token)
 
       // Assert
       expect(response.status).not.toBe(200)
-      expect(response.data.error).toContain('permission')
+      expect(response.body.error).toContain('permission')
     })
 
     it('should return 404 for non-existent user', async () => {
       // Act
-      const response = await client.deleteUser('99999')
+      const response = await request()
+        .delete('/api/v1/admin/users/99999')
+        .auth(adminToken)
 
       // Assert
       expect(response.status).not.toBe(200)
@@ -198,9 +196,15 @@ describe('User Management E2E (Admin)', () => {
       const user = await TestDB.createTestUser()
 
       // Act - Super admin should have all permissions
-      const listResponse = await client.listUsers()
-      const getResponse = await client.getUser(user.id.toString())
-      const deleteResponse = await client.deleteUser(user.id.toString())
+      const listResponse = await request()
+        .get('/api/v1/admin/users')
+        .auth(adminToken)
+      const getResponse = await request()
+        .get(`/api/v1/admin/users/${user.id}`)
+        .auth(adminToken)
+      const deleteResponse = await request()
+        .delete(`/api/v1/admin/users/${user.id}`)
+        .auth(adminToken)
 
       // Assert
       expect(listResponse.status).toBe(200)
@@ -215,18 +219,23 @@ describe('User Management E2E (Admin)', () => {
         email: 'noperm@test.com',
         password: 'admin123'
       })
-      
-      const signInResponse = await client.adminSignIn({
-        email: 'noperm@test.com',
-        password: 'admin123'
-      })
-      
-      client.setToken(signInResponse.data.token)
+
+      const signInResponse = await request()
+        .post('/api/v1/admin/auth/sign-in')
+        .send({ email: 'noperm@test.com', password: 'admin123' })
+
+      const token = signInResponse.body.token
 
       // Act
-      const listResponse = await client.listUsers()
-      const getResponse = await client.getUser(user.id.toString())
-      const deleteResponse = await client.deleteUser(user.id.toString())
+      const listResponse = await request()
+        .get('/api/v1/admin/users')
+        .auth(token)
+      const getResponse = await request()
+        .get(`/api/v1/admin/users/${user.id}`)
+        .auth(token)
+      const deleteResponse = await request()
+        .delete(`/api/v1/admin/users/${user.id}`)
+        .auth(token)
 
       // Assert
       expect(listResponse.status).not.toBe(200)
