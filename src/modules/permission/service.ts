@@ -1,4 +1,4 @@
-import { db } from '../../utils/db'
+import { db } from "../../utils/db";
 
 export class PermissionService {
   /**
@@ -6,8 +6,8 @@ export class PermissionService {
    */
   static async getPermissionById(id: bigint) {
     return await db.permission.findUnique({
-      where: { id, isDeleted: false }
-    })
+      where: { id, isDeleted: false },
+    });
   }
 
   /**
@@ -16,12 +16,8 @@ export class PermissionService {
   static async getAllPermissions() {
     return await db.permission.findMany({
       where: { isDeleted: false, isActive: true },
-      orderBy: [
-        { group: 'asc' },
-        { groupOrder: 'asc' },
-        { order: 'asc' }
-      ]
-    })
+      orderBy: [{ group: "asc" }, { groupOrder: "asc" }, { order: "asc" }],
+    });
   }
 
   /**
@@ -29,34 +25,34 @@ export class PermissionService {
    */
   static async getPermissionsByGroup(group: string) {
     return await db.permission.findMany({
-      where: { 
+      where: {
         group,
         isDeleted: false,
-        isActive: true
+        isActive: true,
       },
-      orderBy: { order: 'asc' }
-    })
+      orderBy: { order: "asc" },
+    });
   }
 
   /**
    * Create a new permission
    */
   static async createPermission(data: {
-    name: string
-    displayName: string
-    slug: string
-    group: string
-    groupOrder: number
-    order: number
-    createdBy?: bigint
+    name: string;
+    displayName: string;
+    slug: string;
+    group: string;
+    groupOrder: number;
+    order: number;
+    createdBy?: bigint;
   }) {
     return await db.permission.create({
       data: {
         ...data,
         isActive: true,
-        isDeleted: false
-      }
-    })
+        isDeleted: false,
+      },
+    });
   }
 
   /**
@@ -65,17 +61,17 @@ export class PermissionService {
   static async updatePermission(
     id: bigint,
     data: {
-      displayName?: string
-      order?: number
-      groupOrder?: number
-      isActive?: boolean
-      updatedBy?: bigint
+      displayName?: string;
+      order?: number;
+      groupOrder?: number;
+      isActive?: boolean;
+      updatedBy?: bigint;
     }
   ) {
     return await db.permission.update({
       where: { id },
-      data
-    })
+      data,
+    });
   }
 
   /**
@@ -87,9 +83,9 @@ export class PermissionService {
       data: {
         isDeleted: true,
         deletedAt: new Date(),
-        deletedBy
-      }
-    })
+        deletedBy,
+      },
+    });
   }
 
   /**
@@ -105,45 +101,50 @@ export class PermissionService {
               include: {
                 permissions: {
                   include: {
-                    permission: true
-                  }
-                }
-              }
-            }
-          }
+                    permission: true,
+                  },
+                },
+              },
+            },
+          },
         },
         permissions: {
           include: {
-            permission: true
-          }
-        }
-      }
-    })
+            permission: true,
+          },
+        },
+      },
+    });
 
-    if (!admin) return []
+    if (!admin) return [];
 
     // Collect all permissions (from roles + direct permissions)
-    const permissionsSet = new Set<bigint>()
-    const permissions: { id: bigint; name: string; slug: string; group: string }[] = []
+    const permissionsSet = new Set<bigint>();
+    const permissions: {
+      id: bigint;
+      name: string;
+      slug: string;
+      group: string;
+    }[] = [];
 
     // Add permissions from roles
-    admin.roles.forEach(adminRole => {
-      adminRole.role.permissions.forEach(permRole => {
+    admin.roles.forEach((adminRole) => {
+      adminRole.role.permissions.forEach((permRole) => {
         if (!permissionsSet.has(permRole.permission.id)) {
-          permissionsSet.add(permRole.permission.id)
-          permissions.push(permRole.permission)
+          permissionsSet.add(permRole.permission.id);
+          permissions.push(permRole.permission);
         }
-      })
-    })
+      });
+    });
 
     // Add direct permissions
-    admin.permissions.forEach(adminPerm => {
+    admin.permissions.forEach((adminPerm) => {
       if (!permissionsSet.has(adminPerm.permission.id)) {
-        permissionsSet.add(adminPerm.permission.id)
-        permissions.push(adminPerm.permission)
+        permissionsSet.add(adminPerm.permission.id);
+        permissions.push(adminPerm.permission);
       }
-    })
+    });
 
-    return permissions
+    return permissions;
   }
 }

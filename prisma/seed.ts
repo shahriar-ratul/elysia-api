@@ -1,14 +1,14 @@
-import { PrismaClient } from '@/generated/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
-import 'dotenv/config';
-import { faker } from '@faker-js/faker';
-import bcrypt from 'bcryptjs';
+import { PrismaClient } from "@/generated/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+import "dotenv/config";
+import { faker } from "@faker-js/faker";
+import bcrypt from "bcryptjs";
 
 // Import seed data
-import { permissionSeeds } from './seedData/permission';
-import { roleSeeds } from './seedData/role';
-import { adminSeeds } from './seedData/admin';
+import { permissionSeeds } from "./seedData/permission";
+import { roleSeeds } from "./seedData/role";
+import { adminSeeds } from "./seedData/admin";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -18,10 +18,10 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('🌱 Starting seed...');
+  console.log("🌱 Starting seed...");
 
   // Truncate tables in correct order (delete child tables before parent tables)
-  console.log('🗑️  Truncating tables...');
+  console.log("🗑️  Truncating tables...");
   await prisma.adminRole.deleteMany();
   await prisma.adminPermission.deleteMany();
   await prisma.permissionRole.deleteMany();
@@ -32,10 +32,10 @@ async function main() {
   await prisma.permission.deleteMany();
   await prisma.role.deleteMany();
 
-  console.log('✅ Truncated tables');
+  console.log("✅ Truncated tables");
 
   // Seed permissions
-  console.log('🌱 Seeding permissions...');
+  console.log("🌱 Seeding permissions...");
   for (const permission of permissionSeeds) {
     await prisma.permission.create({
       data: {
@@ -48,10 +48,10 @@ async function main() {
       },
     });
   }
-  console.log('✅ Seeding permissions done');
+  console.log("✅ Seeding permissions done");
 
   // Seed roles
-  console.log('🌱 Seeding roles...');
+  console.log("🌱 Seeding roles...");
   for (const [index, role] of roleSeeds.entries()) {
     const order = index + 1;
 
@@ -67,7 +67,7 @@ async function main() {
     });
 
     // Assign permissions to roles
-    if (role.slug === 'superadmin' || role.slug === 'admin') {
+    if (role.slug === "superadmin" || role.slug === "admin") {
       // Super admin and admin get all permissions
       const permissions = await prisma.permission.findMany();
       for (const permission of permissions) {
@@ -84,20 +84,20 @@ async function main() {
         where: {
           slug: {
             notIn: [
-              'admin.view',
-              'admin.create',
-              'admin.update',
-              'admin.delete',
-              'admin.status',
-              'role.view',
-              'role.create',
-              'role.update',
-              'role.delete',
-              'role.status',
-              'permission.view',
-              'permission.create',
-              'permission.update',
-              'permission.delete',
+              "admin.view",
+              "admin.create",
+              "admin.update",
+              "admin.delete",
+              "admin.status",
+              "role.view",
+              "role.create",
+              "role.update",
+              "role.delete",
+              "role.status",
+              "permission.view",
+              "permission.create",
+              "permission.update",
+              "permission.delete",
             ],
           },
         },
@@ -113,18 +113,18 @@ async function main() {
       }
     }
   }
-  console.log('✅ Seeding roles done');
+  console.log("✅ Seeding roles done");
 
   // Seed admins
-  console.log('🌱 Seeding admins...');
+  console.log("🌱 Seeding admins...");
   for (const admin of adminSeeds) {
-    const hashedPassword = await bcrypt.hash('password', 15);
+    const hashedPassword = await bcrypt.hash("password", 15);
 
     const createdAdmin = await prisma.admin.create({
       data: {
         firstName: admin.firstName,
         lastName: admin.lastName,
-        dob: new Date('1990-01-01'),
+        dob: new Date("1990-01-01"),
         phone: admin.phone,
         username: admin.username,
         email: admin.email,
@@ -140,13 +140,13 @@ async function main() {
     });
 
     // Assign roles to admins
-    let roleSlug = 'user';
-    if (createdAdmin.username === 'super_admin') {
-      roleSlug = 'superadmin';
-    } else if (createdAdmin.username === 'admin') {
-      roleSlug = 'admin';
-    } else if (createdAdmin.username === 'editor') {
-      roleSlug = 'editor';
+    let roleSlug = "user";
+    if (createdAdmin.username === "super_admin") {
+      roleSlug = "superadmin";
+    } else if (createdAdmin.username === "admin") {
+      roleSlug = "admin";
+    } else if (createdAdmin.username === "editor") {
+      roleSlug = "editor";
     }
 
     const role = await prisma.role.findFirst({
@@ -162,24 +162,24 @@ async function main() {
       });
     }
   }
-  console.log('✅ Seeding admins done');
+  console.log("✅ Seeding admins done");
 
   // Seed additional random admins
-  console.log('🌱 Seeding additional admins...');
+  console.log("🌱 Seeding additional admins...");
   const userRole = await prisma.role.findFirst({
-    where: { slug: 'user' },
+    where: { slug: "user" },
   });
 
   if (userRole) {
     for (let i = 0; i < 10; i++) {
-      const hashedPassword = await bcrypt.hash('password', 15);
+      const hashedPassword = await bcrypt.hash("password", 15);
 
       const admin = await prisma.admin.create({
         data: {
           firstName: faker.person.firstName(),
           lastName: faker.person.lastName(),
           dob: faker.date.birthdate(),
-          gender: 'male',
+          gender: "male",
           phone: faker.phone.number(),
           username: faker.internet.username(),
           email: faker.internet.email(),
@@ -201,25 +201,25 @@ async function main() {
       });
     }
   }
-  console.log('✅ Seeding additional admins done');
+  console.log("✅ Seeding additional admins done");
 
   // make 10 users
-  console.log('🌱 Seeding users...');
+  console.log("🌱 Seeding users...");
 
   // user@user.com
   // password
   // user
   // 1234567890
 
-  const hashedPassword = await bcrypt.hash('password', 15);
+  const hashedPassword = await bcrypt.hash("password", 15);
   await prisma.user.create({
     data: {
       email: `user@user.com`,
       password: hashedPassword,
-      username: 'user',
-      phone: '1234567890',
-      firstName: 'User',
-      lastName: 'User',
+      username: "user",
+      phone: "1234567890",
+      firstName: "User",
+      lastName: "User",
       joinedDate: new Date(),
       isActive: true,
       isVerified: true,
@@ -231,14 +231,14 @@ async function main() {
   });
 
   for (let i = 0; i < 10; i++) {
-    const hashedPassword = await bcrypt.hash('password', 15);
+    const hashedPassword = await bcrypt.hash("password", 15);
 
     await prisma.user.create({
       data: {
         firstName: faker.person.firstName(),
         lastName: faker.person.lastName(),
         dob: faker.date.birthdate(),
-        gender: 'male',
+        gender: "male",
         phone: faker.phone.number(),
         username: faker.internet.username(),
         email: faker.internet.email(),
@@ -253,14 +253,14 @@ async function main() {
     });
   }
 
-  console.log('✅ Seeding users done');
+  console.log("✅ Seeding users done");
 
-  console.log('🎉 Seed completed successfully!');
+  console.log("🎉 Seed completed successfully!");
 }
 
 main()
   .catch((err) => {
-    console.error('❌ Seed failed:', err);
+    console.error("❌ Seed failed:", err);
     process.exit(1);
   })
   .finally(async () => {

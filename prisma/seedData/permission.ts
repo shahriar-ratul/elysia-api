@@ -5,7 +5,7 @@ import {
   roleCrudPermissions,
   permissionCrudPermissions,
   profilePermissions,
-} from './permissions/core-permissions';
+} from "./permissions/core-permissions";
 
 import {
   addressPermissions,
@@ -13,7 +13,7 @@ import {
   languagePermissions,
   countryPermissions,
   auditLogPermissions,
-} from './permissions/data-permissions';
+} from "./permissions/data-permissions";
 
 import {
   customerPermissions,
@@ -24,14 +24,14 @@ import {
   smartItemPermissions,
   invoiceSnippetPermissions,
   emailPermissions,
-} from './permissions/invoice-permissions';
+} from "./permissions/invoice-permissions";
 
 import {
   aiMlPermissions,
   aiModelPermissions,
   aiPromptPermissions,
   aiABTestPermissions,
-} from './permissions/ai-permissions';
+} from "./permissions/ai-permissions";
 
 import {
   creditsPermissions,
@@ -41,7 +41,7 @@ import {
   contactPermissions,
   userSettingsPermissions,
   apiUsagePermissions,
-} from './permissions/feature-permissions';
+} from "./permissions/feature-permissions";
 
 import {
   fileManagementPermissions,
@@ -51,7 +51,7 @@ import {
   emailTemplatePermissions,
   subscriptionPermissions,
   generalSystemModules,
-} from './permissions/system-permissions';
+} from "./permissions/system-permissions";
 
 interface Permission {
   name: string;

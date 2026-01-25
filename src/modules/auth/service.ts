@@ -1,28 +1,25 @@
 // Service handle business logic, decoupled from Elysia controller
-import { status } from 'elysia'
 
-import type { AuthModel } from './model'
+import * as AuthModel from "./model";
 
 // If the class doesn't need to store a property,
 // you may use `abstract class` to avoid class allocation
 export abstract class Auth {
-    static async signIn({ username, password }: AuthModel.signInBody) {
-        const user = await sql`
-			SELECT password
-			FROM users
-			WHERE username = ${username}
-			LIMIT 1`
+  static async signIn({ username, password }: AuthModel.signInBody) {
+    // TODO: Implement database query
+    // Example implementation:
+    // const user = await db.user.findUnique({ where: { username } })
 
-        if (await Bun.password.verify(password, user.password))
-            // You can throw an HTTP error directly
-            throw status(
-                400,
-                'Invalid username or password' satisfies AuthModel.signInInvalid
-            )
+    // Placeholder implementation
+    const user: any = null;
 
-        return {
-            username,
-            token: await generateAndSaveTokenToDB(user.id)
-        }
-    }
+    if (!user || !(await Bun.password.verify(password, user?.password || "")))
+      // You can throw an HTTP error directly
+      throw new Error("Invalid username or password");
+
+    return {
+      username,
+      token: "placeholder-token", // TODO: await generateAndSaveTokenToDB(user.id)
+    };
+  }
 }

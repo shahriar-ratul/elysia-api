@@ -1,0 +1,29 @@
+{
+  "name": "rest-api",
+  "type": "docker-compose",
+  "description": "REST API with Authentication & Permission System",
+  "composeFile": "dokploy-compose.yml",
+  "environment": {
+    "NODE_ENV": "production",
+    "PORT": "4000",
+    "DATABASE_URL": "postgresql://postgres:postgres@postgres:5432/rest_api",
+    "POSTGRES_USER": "postgres",
+    "POSTGRES_DB": "rest_api",
+    "JWT_EXPIRES_IN": "7d",
+    "JWT_REFRESH_EXPIRES_IN": "30d"
+  },
+  "requiredEnvVars": ["JWT_SECRET", "POSTGRES_PASSWORD"],
+  "ports": {
+    "4000": "4000"
+  },
+  "healthCheck": {
+    "path": "/",
+    "interval": 30,
+    "timeout": 10,
+    "retries": 3
+  },
+  "build": {
+    "context": ".",
+    "dockerfile": "Dockerfile"
+  }
+}

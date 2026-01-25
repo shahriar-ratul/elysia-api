@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  # Main application service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rest-api
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/rest_api}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-30d}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    labels:
+      # Dokploy/Traefik labels for domain routing (optional - Dokploy can manage domains via UI)
+      # Uncomment and set DOMAIN env var if using manual Traefik configuration
+      # - "traefik.enable=true"
+      # - "traefik.http.routers.app.rule=Host(`${DOMAIN}`)"
+      # - "traefik.http.routers.app.entrypoints=websecure"
+      # - "traefik.http.routers.app.tls.certresolver=letsencrypt"
+      # - "traefik.http.services.app.loadbalancer.server.port=4000"
+      # - "traefik.http.middlewares.app-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL database service
+  postgres:
+    image: postgres:16-alpine
+    container_name: rest-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-rest_api}
+      # Enable PostgreSQL persistent storage
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      # Named volume ensures data persists across container restarts and removals
+      - postgres-data:/var/lib/postgresql/data
+      # Optional: Mount backup directory for easy access
+      # - ./backups:/backups
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+    # Named volume ensures data persists even if containers are removed
+    # Data is stored in Docker's volume directory: /var/lib/docker/volumes/<project>_postgres-data
+    name: rest-api-postgres-data

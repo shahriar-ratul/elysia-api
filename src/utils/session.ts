@@ -1,13 +1,18 @@
-import { db } from './db'
-import { generateAccessToken, generateRefreshToken, getTokenExpiration, getRefreshTokenExpiration } from './jwt'
+import { db } from "./db";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  getTokenExpiration,
+  getRefreshTokenExpiration,
+} from "./jwt";
 
 /**
  * Session management utilities
  */
 
 interface CreateSessionOptions {
-  ipAddress?: string
-  userAgent?: string
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 /**
@@ -18,8 +23,12 @@ export async function createAdminSession(
   email: string,
   options: CreateSessionOptions = {}
 ) {
-  const token = generateAccessToken({ id: adminId.toString(), email, type: 'admin' })
-  const refreshToken = generateRefreshToken()
+  const token = generateAccessToken({
+    id: adminId.toString(),
+    email,
+    type: "admin",
+  });
+  const refreshToken = generateRefreshToken();
 
   const session = await db.adminSession.create({
     data: {
@@ -30,14 +39,14 @@ export async function createAdminSession(
       userAgent: options.userAgent,
       expiresAt: getTokenExpiration(),
       isRevoked: false,
-    }
-  })
+    },
+  });
 
   return {
     token,
     refreshToken,
     expiresAt: session.expiresAt,
-  }
+  };
 }
 
 /**
@@ -48,8 +57,12 @@ export async function createUserSession(
   email: string,
   options: CreateSessionOptions = {}
 ) {
-  const token = generateAccessToken({ id: userId.toString(), email, type: 'user' })
-  const refreshToken = generateRefreshToken()
+  const token = generateAccessToken({
+    id: userId.toString(),
+    email,
+    type: "user",
+  });
+  const refreshToken = generateRefreshToken();
 
   const session = await db.userSession.create({
     data: {
@@ -60,14 +73,14 @@ export async function createUserSession(
       userAgent: options.userAgent,
       expiresAt: getTokenExpiration(),
       isRevoked: false,
-    }
-  })
+    },
+  });
 
   return {
     token,
     refreshToken,
     expiresAt: session.expiresAt,
-  }
+  };
 }
 
 /**
@@ -85,44 +98,44 @@ export async function validateAdminSession(token: string) {
                 include: {
                   permissions: {
                     include: {
-                      permission: true
-                    }
-                  }
-                }
-              }
-            }
+                      permission: true,
+                    },
+                  },
+                },
+              },
+            },
           },
           permissions: {
             include: {
-              permission: true
-            }
-          }
-        }
-      }
-    }
-  })
+              permission: true,
+            },
+          },
+        },
+      },
+    },
+  });
 
   if (!session) {
-    throw new Error('Session not found')
+    throw new Error("Session not found");
   }
 
   if (session.isRevoked) {
-    throw new Error('Session has been revoked')
+    throw new Error("Session has been revoked");
   }
 
   if (session.expiresAt < new Date()) {
-    throw new Error('Session has expired')
+    throw new Error("Session has expired");
   }
 
   if (!session.admin.isActive) {
-    throw new Error('Admin account is not active')
+    throw new Error("Admin account is not active");
   }
 
   if (session.admin.isDeleted) {
-    throw new Error('Admin account has been deleted')
+    throw new Error("Admin account has been deleted");
   }
 
-  return session
+  return session;
 }
 
 /**
@@ -132,31 +145,31 @@ export async function validateUserSession(token: string) {
   const session = await db.userSession.findUnique({
     where: { token },
     include: {
-      user: true
-    }
-  })
+      user: true,
+    },
+  });
 
   if (!session) {
-    throw new Error('Session not found')
+    throw new Error("Session not found");
   }
 
   if (session.isRevoked) {
-    throw new Error('Session has been revoked')
+    throw new Error("Session has been revoked");
   }
 
   if (session.expiresAt < new Date()) {
-    throw new Error('Session has expired')
+    throw new Error("Session has expired");
   }
 
   if (!session.user.isActive) {
-    throw new Error('User account is not active')
+    throw new Error("User account is not active");
   }
 
   if (session.user.isDeleted) {
-    throw new Error('User account has been deleted')
+    throw new Error("User account has been deleted");
   }
 
-  return session
+  return session;
 }
 
 /**
@@ -169,8 +182,8 @@ export async function revokeAdminSession(token: string, revokedBy?: bigint) {
       isRevoked: true,
       revokedAt: new Date(),
       revokedBy,
-    }
-  })
+    },
+  });
 }
 
 /**
@@ -183,71 +196,71 @@ export async function revokeUserSession(token: string, revokedBy?: bigint) {
       isRevoked: true,
       revokedAt: new Date(),
       revokedBy,
-    }
-  })
+    },
+  });
 }
 
 /**
  * Revoke all admin sessions
  */
-export async function revokeAllAdminSessions(adminId: bigint, revokedBy?: bigint) {
+export async function revokeAllAdminSessions(
+  adminId: bigint,
+  revokedBy?: bigint
+) {
   return await db.adminSession.updateMany({
-    where: { 
+    where: {
       adminId,
-      isRevoked: false 
+      isRevoked: false,
     },
     data: {
       isRevoked: true,
       revokedAt: new Date(),
       revokedBy,
-    }
-  })
+    },
+  });
 }
 
 /**
  * Revoke all user sessions
  */
-export async function revokeAllUserSessions(userId: bigint, revokedBy?: bigint) {
+export async function revokeAllUserSessions(
+  userId: bigint,
+  revokedBy?: bigint
+) {
   return await db.userSession.updateMany({
-    where: { 
+    where: {
       userId,
-      isRevoked: false 
+      isRevoked: false,
     },
     data: {
       isRevoked: true,
       revokedAt: new Date(),
       revokedBy,
-    }
-  })
+    },
+  });
 }
 
 /**
  * Clean up expired sessions
  */
 export async function cleanupExpiredSessions() {
-  const now = new Date()
+  const now = new Date();
 
   const [adminDeleted, userDeleted] = await Promise.all([
     db.adminSession.deleteMany({
       where: {
-        OR: [
-          { expiresAt: { lt: now } },
-          { isRevoked: true }
-        ]
-      }
+        OR: [{ expiresAt: { lt: now } }, { isRevoked: true }],
+      },
     }),
     db.userSession.deleteMany({
       where: {
-        OR: [
-          { expiresAt: { lt: now } },
-          { isRevoked: true }
-        ]
-      }
-    })
-  ])
+        OR: [{ expiresAt: { lt: now } }, { isRevoked: true }],
+      },
+    }),
+  ]);
 
   return {
     adminSessionsDeleted: adminDeleted.count,
     userSessionsDeleted: userDeleted.count,
-  }
+  };
 }

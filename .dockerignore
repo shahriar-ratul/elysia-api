@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+bun.lock
+
+# Build outputs
+dist/
+
+# Development files
+.env.local
+.env.dev
+.env.test
+*.log
+npm-debug.log*
+bun-debug.log*
+
+# Git
+.git/
+.gitignore
+.github/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+.nyc_output/
+**/*.test.ts
+**/*.spec.ts
+
+# Documentation (keep README.md)
+*.md
+!README.md
+docs/
+
+# CI/CD
+.husky/
+.commitlintrc*
+
+# Misc
+.DS_Store
+.env.example
+docker-compose.yml
+docker-compose.swarm.yml
+docker-stack.yml
+Dockerfile*
+performance-test.js
+compare-builds.sh
+deploy-swarm.sh
+SWARM_DEPLOYMENT.md
+SWARM_QUICKSTART.md
+DOKPLOY_DEPLOYMENT.md

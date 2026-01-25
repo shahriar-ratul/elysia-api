@@ -1,4 +1,4 @@
-import { db } from '../../utils/db'
+import { db } from "../../utils/db";
 
 export class RoleService {
   /**
@@ -10,11 +10,11 @@ export class RoleService {
       include: {
         permissions: {
           include: {
-            permission: true
-          }
-        }
-      }
-    })
+            permission: true,
+          },
+        },
+      },
+    });
   }
 
   /**
@@ -26,11 +26,11 @@ export class RoleService {
       include: {
         permissions: {
           include: {
-            permission: true
-          }
-        }
-      }
-    })
+            permission: true,
+          },
+        },
+      },
+    });
   }
 
   /**
@@ -42,40 +42,40 @@ export class RoleService {
       include: {
         permissions: {
           include: {
-            permission: true
-          }
-        }
+            permission: true,
+          },
+        },
       },
-      orderBy: { order: 'asc' }
-    })
+      orderBy: { order: "asc" },
+    });
   }
 
   /**
    * Create a new role
    */
   static async createRole(data: {
-    name: string
-    displayName: string
-    slug: string
-    description?: string
-    isDefault?: boolean
-    order?: number
-    createdBy?: bigint
+    name: string;
+    displayName: string;
+    slug: string;
+    description?: string;
+    isDefault?: boolean;
+    order?: number;
+    createdBy?: bigint;
   }) {
     return await db.role.create({
       data: {
         ...data,
         isActive: true,
-        isDeleted: false
+        isDeleted: false,
       },
       include: {
         permissions: {
           include: {
-            permission: true
-          }
-        }
-      }
-    })
+            permission: true,
+          },
+        },
+      },
+    });
   }
 
   /**
@@ -84,11 +84,11 @@ export class RoleService {
   static async updateRole(
     id: bigint,
     data: {
-      displayName?: string
-      description?: string
-      order?: number
-      isActive?: boolean
-      updatedBy?: bigint
+      displayName?: string;
+      description?: string;
+      order?: number;
+      isActive?: boolean;
+      updatedBy?: bigint;
     }
   ) {
     return await db.role.update({
@@ -97,11 +97,11 @@ export class RoleService {
       include: {
         permissions: {
           include: {
-            permission: true
-          }
-        }
-      }
-    })
+            permission: true,
+          },
+        },
+      },
+    });
   }
 
   /**
@@ -110,18 +110,18 @@ export class RoleService {
   static async assignPermissions(roleId: bigint, permissionIds: bigint[]) {
     // Remove existing permissions
     await db.permissionRole.deleteMany({
-      where: { roleId }
-    })
+      where: { roleId },
+    });
 
     // Add new permissions
-    const data = permissionIds.map(permissionId => ({
+    const data = permissionIds.map((permissionId) => ({
       roleId,
-      permissionId
-    }))
+      permissionId,
+    }));
 
-    await db.permissionRole.createMany({ data })
+    await db.permissionRole.createMany({ data });
 
-    return await this.getRoleById(roleId)
+    return await this.getRoleById(roleId);
   }
 
   /**
@@ -133,8 +133,8 @@ export class RoleService {
       data: {
         isDeleted: true,
         deletedAt: new Date(),
-        deletedBy
-      }
-    })
+        deletedBy,
+      },
+    });
   }
 }
