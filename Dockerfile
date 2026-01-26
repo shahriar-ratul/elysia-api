@@ -11,11 +11,23 @@ COPY package.json bun.lock* ./
 # Install dependencies
 RUN bun install --frozen-lockfile
 
+# Copy Prisma schema files (needed to generate client)
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN bunx prisma generate
+
 # Copy source code
 COPY . .
 
 # Type check first, then build with SWC (fast!)
-RUN bun run build
+# Externalize Prisma runtime modules - they use dynamic imports and must be available at runtime
+RUN bun run typecheck && \
+    rm -rf dist && \
+    bun build ./src/index.ts --outdir ./dist --target bun \
+    --external "@prisma/client/runtime/query_compiler_bg.postgresql.mjs" \
+    --external "@prisma/client/runtime/query_compiler_bg.postgresql.wasm-base64.mjs" \
+    --external "@prisma/adapter-pg"
 
 # Stage 2: Production stage
 FROM oven/bun:1.3.4-slim
@@ -36,6 +48,9 @@ COPY --from=builder --chown=bunuser:nodejs /app/node_modules ./node_modules
 
 # Copy built files
 COPY --from=builder --chown=bunuser:nodejs /app/dist ./dist
+
+# Copy generated Prisma client (needed at runtime)
+COPY --from=builder --chown=bunuser:nodejs /app/src/generated ./src/generated
 
 # Copy package.json for scripts
 COPY --chown=bunuser:nodejs package.json ./
