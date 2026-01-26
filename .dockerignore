@@ -42,7 +42,6 @@ docs/
 
 # Misc
 .DS_Store
-.env.example
 docker-compose.yml
 docker-compose.swarm.yml
 docker-stack.yml
