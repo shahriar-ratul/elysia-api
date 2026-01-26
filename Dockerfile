@@ -11,11 +11,12 @@ COPY package.json bun.lock* ./
 # Install dependencies
 RUN bun install --frozen-lockfile
 
-# Copy Prisma schema files (needed to generate client)
+# Copy Prisma schema files and config (needed to generate client)
 COPY prisma ./prisma
+COPY prisma.config.ts ./
 
-# Generate Prisma client
-RUN bunx prisma generate
+# Generate Prisma client (schema is in prisma/schema/schema.prisma)
+RUN bunx prisma generate --schema prisma/schema/schema.prisma
 
 # Copy source code
 COPY . .
